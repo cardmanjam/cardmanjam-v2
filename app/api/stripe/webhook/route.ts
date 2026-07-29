@@ -33,7 +33,8 @@ export async function POST(request: Request) {
         stripe_payment_intent_id: String(session.payment_intent || ""),
         customer_email: session.customer_details?.email,
         customer_name: session.customer_details?.name,
-        shipping_address: session.shipping_details?.address || null,
+        shipping_address:
+  session.collected_information?.shipping_details?.address || null,
         amount_total: session.amount_total || 0,
         shipping_total: session.total_details?.amount_shipping || 0,
         status: "paid",
