@@ -140,7 +140,7 @@ export default function NewProduct() {
         <div className="field full"><label>Title</label><input name="title" required/></div>
         <div className="field"><label>Price ($)</label><input name="price" type="number" min="0.01" step="0.01" required/></div>
         <div className="field"><label>Quantity</label><input name="quantity" type="number" defaultValue="1" min="1" required/></div>
-        <div className="field"><label>Category</label><select name="category"><option value="single">Raw Single</option><option value="slab">Slab</option><option value="sealed">Sealed</option></select></div>
+        <div className="field"><label>Category</label><select name="category"><option value="single">Raw Single</option><option value="slab">Graded Slab</option><option value="sealed">Sealed Product</option></select></div>
         <div className="field"><label>Shipping</label><select name="shipping_class"><option value="card">$5 Card/Slab</option><option value="sealed">$15 Sealed</option></select></div>
         <div className="field full"><label>Condition</label><input name="condition" placeholder="LP, PSA 9, factory sealed..."/></div>
         <div className="field full"><label>Description</label><textarea name="description"/></div>
