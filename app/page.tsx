@@ -44,11 +44,7 @@ export default async function Home() {
         </div>
       </div>
       <div className="hero-visual">
-        <div className="hero-panel-card">
-          <p className="eyebrow">THE HUNT</p>
-          <h2>Free Pokémon are hidden across New Jersey.</h2>
-          <p>Every week I hide cards around parks, local businesses, downtown areas, and community spots. Follow along for clues. Find it. Keep it.</p>
-        </div>
+        <img className="hero-portrait" src="/about/jam-smiling-actual.jpeg" alt="Jam smiling" />
       </div>
     </section>
 

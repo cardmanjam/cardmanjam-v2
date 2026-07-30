@@ -107,17 +107,17 @@ button, input, select, textarea { font: inherit; }
 
 .hero {
   display: grid;
-  grid-template-columns: 1.12fr 0.88fr;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
   gap: 2rem;
   align-items: center;
   padding: 5.8rem 0 4rem;
 }
 .hero-copy h1 {
-  font-size: clamp(3rem, 5.2vw, 4.6rem);
+  font-size: clamp(2.8rem, 4.8vw, 4.35rem);
   line-height: 0.95;
   margin: 0.3rem 0 1rem;
   letter-spacing: -0.04em;
-  max-width: 9.5ch;
+  max-width: 10.2ch;
 }
 .hero-copy p { font-size: 1.08rem; color: var(--muted); line-height: 1.75; margin: 0.3rem 0; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 0.9rem; margin-top: 1.6rem; }
@@ -130,20 +130,20 @@ button, input, select, textarea { font: inherit; }
   font-weight: 600;
 }
 .hero-visual {
-  padding: 1.2rem;
-  border-radius: 2rem;
-  background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
-  border: 1px solid rgba(255,255,255,0.12);
+  padding: 0.2rem;
+  border-radius: 1.8rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(245, 198, 91, 0.24);
   box-shadow: 0 24px 46px rgba(0,0,0,0.28);
 }
-.hero-panel-card {
-  border-radius: 1.5rem;
-  padding: 2.1rem;
-  background: linear-gradient(140deg, rgba(59,130,246,0.22), rgba(245,198,91,0.14));
-  border: 1px solid rgba(255,255,255,0.12);
+.hero-portrait {
+  width: 100%;
+  height: min(32rem, 62vh);
+  object-fit: cover;
+  object-position: center 18%;
+  border-radius: 1.55rem;
+  display: block;
 }
-.hero-panel-card h2 { font-size: 2rem; margin: 0.35rem 0; }
-.hero-panel-card p { color: var(--muted); margin: 0; line-height: 1.7; }
 
 .eyebrow {
   display: inline-block;
@@ -400,6 +400,9 @@ footer { margin-top: 3rem; padding: 2rem 0 3rem; border-top: 1px solid rgba(255,
 
 @media (max-width: 960px) {
   .hero, .detail-shell, .about-grid { grid-template-columns: 1fr; }
+  .hero { padding-top: 4.2rem; }
+  .hero-visual { order: -1; }
+  .hero-portrait { height: min(24rem, 50vh); }
   .feature-grid, .benefit-grid { grid-template-columns: 1fr 1fr; }
   .detail-panel { position: static; }
   .about-grid.reverse { grid-template-columns: 1fr; }
@@ -414,6 +417,7 @@ footer { margin-top: 3rem; padding: 2rem 0 3rem; border-top: 1px solid rgba(255,
   .header-shell { flex-wrap: wrap; }
   .nav { width: 100%; justify-content: space-between; }
   .hero { padding-top: 3rem; }
+  .hero-portrait { height: min(22rem, 46vh); object-position: center 20%; }
   .feature-grid, .benefit-grid { grid-template-columns: 1fr; }
   .cta-banner { flex-direction: column; align-items: flex-start; }
   .about-photo-card img { height: 280px; }
