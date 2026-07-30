@@ -119,7 +119,7 @@ export default async function Home() {
 
     <section className="container section about-grid reverse">
       <div className="about-photo-card about-photo-card--wide">
-        <img src="/about/jam-vendor-actual.jpeg" alt="Jam behind a vendor table" />
+        <img src="/about/Jam-vendor-actual.jpeg" alt="Jam behind a vendor table" />
       </div>
       <div className="about-copy">
         <p className="eyebrow">CARD SHOWS</p>

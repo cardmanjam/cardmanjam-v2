@@ -140,7 +140,7 @@ button, input, select, textarea { font: inherit; }
   width: 100%;
   height: min(32rem, 62vh);
   object-fit: cover;
-  object-position: center 18%;
+  object-position: center 10%;
   border-radius: 1.55rem;
   display: block;
 }
@@ -233,9 +233,9 @@ section, .hero, .hero-visual, .about-photo-card, .benefit-card, .product-card, .
   border: 1px solid rgba(255,255,255,0.12);
   box-shadow: 0 18px 40px rgba(0,0,0,0.24);
 }
-.about-photo-card img { height: 420px; object-fit: cover; }
-.about-photo-card--portrait img { object-position: center 18%; }
-.about-photo-card--wide img { object-position: center; }
+.about-photo-card img { height: 500px; object-fit: cover; }
+.about-photo-card--portrait img { object-position: center 10%; }
+.about-photo-card--wide img { object-position: center 24%; }
 .about-copy h2 { font-size: clamp(1.65rem, 2.2vw, 2.15rem); margin: 0.25rem 0 0.8rem; }
 .about-copy .btn { margin-top: 0.6rem; }
 
