@@ -12,6 +12,9 @@ export type Product = {
   status: "draft" | "active" | "reserved" | "sold";
   image_urls: string[];
   featured: boolean;
+  language: string | null;
+  grading_company: string | null;
+  grade: string | null;
   created_at: string;
 };
 

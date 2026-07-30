@@ -19,6 +19,7 @@ export default function NewProduct() {
   const [uploading, setUploading] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState("single");
 
   const handleImageSelection = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
@@ -109,6 +110,9 @@ export default function NewProduct() {
       const condition = (formRef.current.elements.namedItem("condition") as HTMLInputElement | null)?.value ?? "";
       const description = (formRef.current.elements.namedItem("description") as HTMLTextAreaElement | null)?.value ?? "";
       const vaultNote = (formRef.current.elements.namedItem("vault_note") as HTMLTextAreaElement | null)?.value ?? "";
+      const language = (formRef.current.elements.namedItem("language") as HTMLSelectElement | null)?.value ?? "";
+      const gradingCompany = category === "slab" ? ((formRef.current.elements.namedItem("grading_company") as HTMLSelectElement | null)?.value ?? "") : "";
+      const grade = category === "slab" ? ((formRef.current.elements.namedItem("grade") as HTMLInputElement | null)?.value ?? "") : "";
       const featured = (formRef.current.elements.namedItem("featured") as HTMLInputElement | null)?.checked ? "on" : "";
       const publishImmediately = (formRef.current.elements.namedItem("publish_immediately") as HTMLInputElement | null)?.checked ? "on" : "";
 
@@ -121,6 +125,9 @@ export default function NewProduct() {
       formData.set("condition", condition);
       formData.set("description", description);
       formData.set("vault_note", vaultNote);
+      formData.set("language", language);
+      formData.set("grading_company", gradingCompany);
+      formData.set("grade", grade);
       formData.set("featured", featured);
       formData.set("publish_immediately", publishImmediately);
       formData.set("image_urls", JSON.stringify(uploadedUrls));
@@ -140,11 +147,13 @@ export default function NewProduct() {
         <div className="field full"><label>Title</label><input name="title" required/></div>
         <div className="field"><label>Price ($)</label><input name="price" type="number" min="0.01" step="0.01" required/></div>
         <div className="field"><label>Quantity</label><input name="quantity" type="number" defaultValue="1" min="1" required/></div>
-        <div className="field"><label>Category</label><select name="category"><option value="single">Raw Single</option><option value="slab">Graded Slab</option><option value="sealed">Sealed Product</option></select></div>
+        <div className="field"><label>Category</label><select name="category" value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)}><option value="single">Raw Single</option><option value="slab">Graded Slab</option><option value="sealed">Sealed Product</option></select></div>
         <div className="field"><label>Shipping</label><select name="shipping_class"><option value="card">$5 Card/Slab</option><option value="sealed">$15 Sealed</option></select></div>
         <div className="field full"><label>Condition</label><input name="condition" placeholder="LP, PSA 9, factory sealed..."/></div>
         <div className="field full"><label>Description</label><textarea name="description"/></div>
         <div className="field full"><label>Why it&apos;s in the Vault</label><textarea name="vault_note"/></div>
+        <div className="field"><label>Language</label><select name="language"><option value="">Optional</option><option value="English">English</option><option value="Japanese">Japanese</option><option value="Other">Other</option></select></div>
+        {selectedCategory === "slab" ? <><div className="field"><label>Grading Company</label><select name="grading_company"><option value="">Ungraded</option><option value="PSA">PSA</option><option value="CGC">CGC</option><option value="Other">Other</option></select></div><div className="field"><label>Grade</label><input name="grade" placeholder="9, 10, etc."/></div></> : null}
         <div className="field full">
           <label>Photos (up to 6)</label>
           <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleImageSelection} disabled={selectedImages.length >= 6} />

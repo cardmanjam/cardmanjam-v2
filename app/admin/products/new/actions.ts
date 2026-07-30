@@ -39,6 +39,9 @@ export async function createProduct(formData:FormData, image_urls:string[] = [])
     quantity: Number(formData.get("quantity") || 1),
     status: formData.get("publish_immediately") === "on" ? "active" : "draft",
     featured: formData.get("featured") === "on",
+    language: String(formData.get("language") || ""),
+    grading_company: String(formData.get("grading_company") || ""),
+    grade: String(formData.get("grade") || ""),
     image_urls: urls
   });
   if (error) throw error;
