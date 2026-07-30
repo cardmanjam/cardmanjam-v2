@@ -4,6 +4,7 @@ import AddToCart from "@/components/AddToCart";
 import ProductDetailGallery from "@/components/ProductDetailGallery";
 import { createClient } from "@/lib/supabase/server";
 import type { Product } from "@/lib/types";
+import { formatGradingCompanyLabel, resolveProductGradingCompany, resolveProductLanguage, resolveProductGrade, isGradedProduct } from "@/lib/product-metadata";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -38,8 +39,10 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   if (!product) notFound();
 
   const imageUrls = (product.image_urls || []).filter((image): image is string => typeof image === "string" && Boolean(image));
-  const language = product.language || "Other";
-  const gradingCompany = product.grading_company || (product.category === "slab" ? "Ungraded" : null);
+  const language = resolveProductLanguage(product) ?? "Other";
+  const gradingCompany = resolveProductGradingCompany(product);
+  const grade = resolveProductGrade(product);
+  const graded = isGradedProduct(product);
 
   return (
     <main className="container section">
@@ -57,9 +60,10 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <p className="price" style={{ fontSize: "24px" }}>${(product.price_cents / 100).toFixed(2)}</p>
           <div className="detail-meta">
             <div><strong>Condition</strong><span>{product.condition || "Review listing photos"}</span></div>
-            <div><strong>Category</strong><span>{product.category}</span></div>
+            <div><strong>Card Type</strong><span>{product.category === "slab" ? (graded ? "Graded" : "Ungraded") : product.category === "sealed" ? "Sealed Product" : "Ungraded"}</span></div>
             <div><strong>Language</strong><span>{language}</span></div>
-            {product.category === "slab" ? <div><strong>Grading</strong><span>{gradingCompany}{product.grade ? ` — ${product.grade}` : ""}</span></div> : null}
+            {graded ? <div><strong>Grading Company</strong><span>{formatGradingCompanyLabel(gradingCompany)}</span></div> : null}
+            {graded && grade ? <div><strong>Grade</strong><span>{grade}</span></div> : null}
             <div><strong>Status</strong><span>{product.quantity > 0 ? "In stock" : "Sold out"}</span></div>
             <div><strong>Shipping</strong><span>{product.shipping_class === "sealed" ? "$15 sealed shipping" : "$5 tracked card/slab shipping"}</span></div>
           </div>
