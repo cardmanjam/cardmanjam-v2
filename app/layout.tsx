@@ -5,8 +5,8 @@ import { CartProvider } from "@/components/CartProvider";
 import CartButton from "@/components/CartButton";
 
 export const metadata: Metadata = {
-  title: "Card Man Jam | The Vault",
-  description: "Hand-picked cards, slabs and sealed collector finds."
+  title: "Jam's Cards",
+  description: "Premium Pokémon cards, slabs, and sealed inventory from a collector who cares."
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -15,24 +15,38 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <CartProvider>
           <header className="topbar">
-            <Link className="brand" href="/">
-              <span className="orb" />
-              <span>
-                <div className="brand-title">CARD MAN JAM</div>
-                <div className="brand-sub">HAND-PICKED CARD VAULT</div>
-              </span>
-            </Link>
-            <nav className="nav">
-              <Link href="/#shop">SHOP</Link>
-              <Link href="/admin">ADMIN</Link>
-              <CartButton />
-            </nav>
+            <div className="container header-shell">
+              <Link className="brand" href="/">
+                <span className="brand-mark" />
+                <span>
+                  <div className="brand-title">JAM'S CARDS</div>
+                  <div className="brand-sub">Collector-owned inventory</div>
+                </span>
+              </Link>
+              <nav className="nav">
+                <Link href="/#shop">Inventory</Link>
+                <Link href="/#about">About</Link>
+                <a href="https://www.instagram.com/cardmanjam" target="_blank" rel="noreferrer">Instagram</a>
+                <a href="https://x.com/cardmanjam" target="_blank" rel="noreferrer">X</a>
+                <CartButton />
+              </nav>
+            </div>
           </header>
           {children}
           <footer>
-            <strong>Card Man Jam</strong>
-            <p>Independent collectible card seller based in New Jersey.</p>
-            <p>Terms • Privacy • Shipping • Returns — replace draft policies before public launch.</p>
+            <div className="container footer-shell">
+              <div>
+                <strong>JAM'S CARDS</strong>
+                <p>Collector-owned Pokémon cards from New Jersey.</p>
+              </div>
+              <div className="footer-links">
+                <a href="https://www.instagram.com/cardmanjam" target="_blank" rel="noreferrer">Instagram</a>
+                <a href="https://x.com/cardmanjam" target="_blank" rel="noreferrer">X</a>
+                <a href="https://www.ebay.com/" target="_blank" rel="noreferrer">eBay</a>
+                <a href="mailto:hello@jamscards.com">Email</a>
+              </div>
+            </div>
+            <div className="container footer-note">Thanks for supporting a small collector.</div>
           </footer>
         </CartProvider>
       </body>

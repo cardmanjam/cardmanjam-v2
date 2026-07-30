@@ -41,22 +41,24 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       <Link href="/" className="btn secondary" style={{ marginBottom: "1.5rem" }}>
         ← Back to shop
       </Link>
-      <div className="card" style={{ display: "grid", gap: "1.5rem", gridTemplateColumns: "1.1fr 0.9fr" }}>
-        <div>
-          {product.featured ? <span className="tag">JAM'S PICK</span> : null}
+      <div className="detail-shell">
+        <div className="card">
+          {product.featured ? <span className="tag" style={{ marginBottom: "0.9rem" }}>JAM'S PICK</span> : null}
           <ProductDetailGallery title={product.title} imageUrls={imageUrls} />
         </div>
-        <div>
-          <p className="eyebrow">VAULT LISTING</p>
-          <h1 style={{ marginTop: 0 }}>{product.title}</h1>
+        <div className="detail-panel">
+          <p className="eyebrow">PREMIUM LISTING</p>
+          <h1>{product.title}</h1>
           <p className="price" style={{ fontSize: "24px" }}>${(product.price_cents / 100).toFixed(2)}</p>
-          <p><strong>Condition:</strong> {product.condition || "Review listing photos"}</p>
-          <p><strong>Category:</strong> {product.category}</p>
-          <p><strong>Language:</strong> {language}</p>
-          {product.category === "slab" ? <p><strong>Grading:</strong> {gradingCompany}{product.grade ? ` — ${product.grade}` : ""}</p> : null}
-          <p><strong>Status:</strong> {product.quantity > 0 ? "In stock" : "Sold out"}</p>
-          <p><strong>Shipping:</strong> {product.shipping_class === "sealed" ? "$15 sealed shipping" : "$5 tracked card/slab shipping"}</p>
-          <div style={{ margin: "1.25rem 0" }}>
+          <div className="detail-meta">
+            <div><strong>Condition</strong><span>{product.condition || "Review listing photos"}</span></div>
+            <div><strong>Category</strong><span>{product.category}</span></div>
+            <div><strong>Language</strong><span>{language}</span></div>
+            {product.category === "slab" ? <div><strong>Grading</strong><span>{gradingCompany}{product.grade ? ` — ${product.grade}` : ""}</span></div> : null}
+            <div><strong>Status</strong><span>{product.quantity > 0 ? "In stock" : "Sold out"}</span></div>
+            <div><strong>Shipping</strong><span>{product.shipping_class === "sealed" ? "$15 sealed shipping" : "$5 tracked card/slab shipping"}</span></div>
+          </div>
+          <div className="detail-actions">
             <AddToCart product={product} />
           </div>
           <div className="note">
@@ -64,8 +66,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <p>{product.description || "A hand-picked piece from the vault."}</p>
           </div>
           <div className="note" style={{ marginTop: "1rem" }}>
-            <strong>Why It&apos;s in the Vault</strong>
-            <p>{product.vault_note || "Hand-picked by Card Man Jam."}</p>
+            <strong>Why it stands out</strong>
+            <p>{product.vault_note || "Hand-picked by Jam for collectors who care about quality."}</p>
           </div>
         </div>
       </div>

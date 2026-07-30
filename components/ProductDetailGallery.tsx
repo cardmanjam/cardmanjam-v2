@@ -121,7 +121,7 @@ export default function ProductDetailGallery({ title, imageUrls }: { title: stri
             <img
               src={selectedImage}
               alt={title}
-              style={{ width: "100%", height: "420px", objectFit: "contain", background: "radial-gradient(circle,#243e72,#071024)", border: "3px solid #111", display: "block" }}
+              style={{ width: "100%", height: "520px", objectFit: "contain", background: "radial-gradient(circle,#243e72,#071024)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "1.25rem", boxShadow: "0 24px 48px rgba(0,0,0,0.28)", display: "block" }}
             />
             {showLens && selectedImage ? (
               <div
@@ -151,7 +151,7 @@ export default function ProductDetailGallery({ title, imageUrls }: { title: stri
       {thumbnails.length > 0 ? (
         <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
           {thumbnails.map((imageUrl, index) => (
-            <button key={`${imageUrl}-${index}`} type="button" onClick={() => setSelectedImage(imageUrl)} style={{ padding: 0, border: selectedImage === imageUrl ? "3px solid #ffd83d" : "3px solid #111", background: "transparent", cursor: "pointer" }}>
+            <button key={`${imageUrl}-${index}`} type="button" onClick={() => setSelectedImage(imageUrl)} style={{ padding: 0, border: selectedImage === imageUrl ? "2px solid #ffd83d" : "2px solid rgba(255,255,255,0.16)", background: "transparent", cursor: "pointer", borderRadius: "0.9rem", overflow: "hidden" }}>
               <img src={imageUrl} alt={`${title} ${index + 1}`} style={{ width: "96px", height: "96px", objectFit: "cover", display: "block" }} />
             </button>
           ))}

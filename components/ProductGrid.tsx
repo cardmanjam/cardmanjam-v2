@@ -41,6 +41,12 @@ export default function ProductGrid({ products }: { products: Product[] }) {
     });
   }, [categoryFilter, languageFilters, companyFilters, products]);
 
+  const isRecentlyAdded = (createdAt: string) => {
+    const timestamp = new Date(createdAt).getTime();
+    const cutoff = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    return Number.isFinite(timestamp) && timestamp >= cutoff;
+  };
+
   const toggleLanguage = (value: string) => {
     setLanguageFilters((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
   };
@@ -58,7 +64,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
   const hasActiveFilters = categoryFilter !== "all" || languageFilters.length > 0 || companyFilters.length > 0;
 
   return <>
-    <div className="filters" style={{ justifyContent: "flex-start", margin: "0 0 18px" }}>
+    <div className="filters">
       {(["all", "single", "slab", "sealed"] as const).map((value) =>
         <button key={value} className={`filter ${categoryFilter === value ? "active" : ""}`} onClick={() => setCategoryFilter(value)}>{value === "all" ? "All" : value === "single" ? "Singles" : value === "slab" ? "Graded Slabs" : "Sealed"}</button>
       )}
@@ -74,26 +80,33 @@ export default function ProductGrid({ products }: { products: Product[] }) {
       {(["PSA", "CGC"] as const).map((company) => <button key={company} type="button" className={`filter ${companyFilters.includes(company) ? "active" : ""}`} onClick={() => toggleCompany(company)}>{company}</button>)}
     </div> : null}
     {shown.length === 0 ? (
-      <div className="card" style={{ padding: "2rem", textAlign: "center" }}>
-        <h3>No active products right now</h3>
-        <p>New inventory is being added regularly. Check back soon for fresh vault drops.</p>
+      <div className="empty-state">
+        <h3>I'm out hunting for the next great collection.</h3>
+        <p>Follow me on Instagram to see pickups before they hit the website.</p>
+        <div className="hero-actions">
+          <a className="btn secondary" href="https://www.instagram.com/cardmanjam" target="_blank" rel="noreferrer">Follow on Instagram</a>
+          <a className="btn" href="https://x.com/cardmanjam" target="_blank" rel="noreferrer">Follow on X</a>
+        </div>
       </div>
     ) : (
-      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
-        {shown.map((product) => <article className="card" key={product.id} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          {product.featured ? <span className="tag">JAM&apos;S PICK</span> : null}
-          <Link href={`/products/${product.id}`}>
+      <div className="grid">
+        {shown.map((product) => <article className="product-card" key={product.id}>
+          {product.featured || isRecentlyAdded(product.created_at) ? <span className="tag">{product.featured ? "JAM'S PICK" : "RECENTLY ADDED"}</span> : null}
+          <Link className="product-card-link" href={`/products/${product.id}`}>
             {product.image_urls?.[0]
-              ? <img className="card-image" src={product.image_urls[0]} alt={product.title} style={{ height: "220px" }} />
-              : <div className="placeholder" style={{ height: "220px" }}>JC</div>}
+              ? <img className="card-image" src={product.image_urls[0]} alt={product.title} />
+              : <div className="placeholder">JC</div>}
+            <div>
+              <h3>{product.title}</h3>
+              <p className="price">${(product.price_cents / 100).toFixed(2)}</p>
+              <p>{product.condition || "Review listing photos"}</p>
+              {product.category === "slab" ? <p style={{ color: "#a8b7cd" }}>{getGradingCompany(product) ? `${getGradingCompany(product)}${product.grade ? ` • ${product.grade}` : ""}` : "Ungraded or review"}</p> : null}
+            </div>
           </Link>
-          <div>
-            <Link href={`/products/${product.id}`} style={{ textDecoration: "none" }}><h3 style={{ margin: "0 0 0.35rem" }}>{product.title}</h3></Link>
-            <p className="price">${(product.price_cents / 100).toFixed(2)}</p>
-            <p style={{ margin: "0.25rem 0" }}>{product.condition || "Review listing photos"}</p>
-            {product.category === "slab" ? <p style={{ margin: "0.25rem 0", color: "#a9b9d6" }}>{getGradingCompany(product) ? `${getGradingCompany(product)}${product.grade ? ` • ${product.grade}` : ""}` : "Ungraded or review"}</p> : null}
+          <div className="product-card-footer">
+            <p className="eyebrow" style={{ margin: 0 }}>Available now</p>
+            <AddToCart product={product} />
           </div>
-          <AddToCart product={product}/>
         </article>)}
       </div>
     )}
