@@ -64,7 +64,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
       )}
     </div>
     <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center", marginBottom: "1.25rem" }}>
-      <span className="eyebrow">{shown.length} items</span>
+      <span className="eyebrow">{shown.length} cards in My Vault</span>
       {hasActiveFilters ? <button className="btn secondary" onClick={clearFilters} type="button">Clear Filters</button> : null}
     </div>
     {categoryFilter === "single" ? <div style={{ display: "flex", gap: "0.65rem", flexWrap: "wrap", marginBottom: "1rem" }}>
@@ -75,8 +75,8 @@ export default function ProductGrid({ products }: { products: Product[] }) {
     </div> : null}
     {shown.length === 0 ? (
       <div className="empty-state">
-        <h3>I'm out hunting for the next great collection.</h3>
-        <p>Follow me on Instagram to see pickups before they hit the website.</p>
+        <h3>I'm out hunting for the next card worth adding.</h3>
+        <p>Follow me on Instagram to see pickups before they land in My Vault.</p>
         <div className="hero-actions">
           <a className="btn secondary" href="https://www.instagram.com/cardmanjam" target="_blank" rel="noreferrer">Follow on Instagram</a>
           <a className="btn" href="https://x.com/cardmanjam" target="_blank" rel="noreferrer">Follow on X</a>
@@ -98,7 +98,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
             </div>
           </Link>
           <div className="product-card-footer">
-            <p className="eyebrow" style={{ margin: 0 }}>Available now</p>
+            <p className="eyebrow" style={{ margin: 0 }}>Ready to ship</p>
             <AddToCart product={product} />
           </div>
         </article>)}

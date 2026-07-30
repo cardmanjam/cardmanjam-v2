@@ -52,8 +52,8 @@ export default function CartDrawer() {
     <button className="cart-backdrop" aria-label="Close cart" onClick={() => cart.setOpen(false)} />
     <aside className="cart-panel">
       <button className="btn secondary" onClick={() => cart.setOpen(false)}>CLOSE</button>
-      <h2>Vault Cart</h2>
-      {!cart.items.length && <p>Your cart is empty.</p>}
+      <h2>My Vault Cart</h2>
+      {!cart.items.length && <p>Your cart is empty for now. When you find something you love, I'll hold it here in this browser.</p>}
       {cart.items.map(item => <div className="cart-row" key={item.id}>
         <div><strong>{item.title}</strong><div>${(item.price_cents/100).toFixed(2)}</div></div>
         <button className="btn danger" onClick={() => cart.remove(item.id)}>X</button>
@@ -61,9 +61,9 @@ export default function CartDrawer() {
       {!!cart.items.length && <div className="cart-footer">
         <p>Items: <strong>${(total/100).toFixed(2)}</strong></p>
         <p>Shipping: <strong>${(shipping/100).toFixed(2)}</strong></p>
-        <p>Tax and discounts are calculated by Stripe at checkout.</p>
+        <p>Tax and any discount codes are handled securely by Stripe at checkout.</p>
         <button className="btn" disabled={loading} onClick={checkout}>
-          {loading ? "OPENING STRIPE..." : "SECURE CHECKOUT"}
+          {loading ? "OPENING STRIPE..." : "CONTINUE TO STRIPE CHECKOUT"}
         </button>
       </div>}
     </aside>

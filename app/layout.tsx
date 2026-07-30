@@ -5,8 +5,8 @@ import { CartProvider } from "@/components/CartProvider";
 import CartButton from "@/components/CartButton";
 
 export const metadata: Metadata = {
-  title: "Jam's Cards",
-  description: "Premium Pokémon cards, slabs, and sealed inventory from a collector who cares."
+  title: "Card Man Jam | Jam's Cards",
+  description: "Hand-picked Pokemon cards, slabs, and sealed finds from Jam, a New Jersey collector and active vendor."
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <span className="brand-mark" />
                 <span>
                   <div className="brand-title">JAM'S CARDS</div>
-                  <div className="brand-sub">Collector-owned inventory</div>
+                  <div className="brand-sub">Picked by Jam in New Jersey</div>
                 </span>
               </Link>
               <nav className="nav">
@@ -37,16 +37,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="container footer-shell">
               <div>
                 <strong>JAM'S CARDS</strong>
-                <p>Collector-owned Pokémon cards from New Jersey.</p>
+                <p>Hand-picked Pokemon cards, slabs, and sealed finds from my corner of New Jersey.</p>
               </div>
               <div className="footer-links">
                 <a href="https://www.instagram.com/cardmanjam" target="_blank" rel="noreferrer">Instagram</a>
                 <a href="https://x.com/cardmanjam" target="_blank" rel="noreferrer">X</a>
                 <a href="https://www.ebay.com/" target="_blank" rel="noreferrer">eBay</a>
-                <a href="mailto:hello@jamscards.com">Email</a>
+                <a href="mailto:hello@jamscards.com">Message Me</a>
               </div>
             </div>
-            <div className="container footer-note">Thanks for supporting a small collector.</div>
+            <div className="container footer-note">Thanks for spending time in My Vault.</div>
           </footer>
         </CartProvider>
       </body>
