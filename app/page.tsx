@@ -2,6 +2,9 @@ import ProductGrid from "@/components/ProductGrid";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Product } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 async function getProducts(): Promise<Product[]> {
   try {
     const db = createAdminClient();
