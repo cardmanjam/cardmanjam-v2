@@ -1,4 +1,5 @@
 import ProductGrid from "@/components/ProductGrid";
+import JamPortrait from "@/components/JamPortrait";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Product } from "@/lib/types";
 
@@ -43,20 +44,33 @@ export default async function Home() {
           <span>✓ New Inventory Weekly</span>
         </div>
       </div>
-      <div className="hero-visual">
-        <img className="hero-portrait" src="/about/jam-smiling-actual.jpeg" alt="Jam smiling" />
-      </div>
+      <JamPortrait />
     </section>
 
-    <section className="container section giveaway-section">
+    <section className="container section giveaway-section hunt-section">
       <div className="giveaway-copy">
         <p className="eyebrow">THE HUNT</p>
-        <h2>Free Pokémon are hidden across New Jersey.</h2>
-        <p>Every week I hide Pokémon cards around parks, local businesses, downtown areas, and community spots.</p>
-        <p>No purchase necessary. Follow along for clues. Find it. Keep it.</p>
+        <h2>I'm giving Pokémon cards to people around the world.</h2>
+        <p>It starts here in New Jersey.</p>
+        <p>I'm hiding free Pokémon cards in parks, local businesses, downtown areas, and community spots—but that's only the beginning.</p>
+        <p>My goal is to grow The Hunt into a worldwide movement that gets more cards into more hands.</p>
+        <p>No purchase necessary.</p>
+        <p>Follow along for clues, giveaways, and every new drop.</p>
+        <p>Find it. Keep it. Pass the joy forward.</p>
         <div className="hero-actions">
-          <a className="btn secondary" href="https://www.instagram.com/cardmanjam" target="_blank" rel="noreferrer">Follow on Instagram</a>
+          <a className="btn secondary" href="https://www.instagram.com/cardmanjam" target="_blank" rel="noreferrer">Follow the Hunt on Instagram</a>
           <a className="btn" href="https://x.com/cardmanjam" target="_blank" rel="noreferrer">Follow on X</a>
+        </div>
+        <p className="hunt-support">Starting in New Jersey. Built for collectors everywhere.</p>
+      </div>
+      <div className="hunt-visual" aria-hidden="true">
+        <div className="hunt-world">
+          <span className="hunt-marker hunt-marker--nj"></span>
+          <span className="hunt-marker hunt-marker--global"></span>
+          <span className="hunt-path hunt-path--one"></span>
+          <span className="hunt-path hunt-path--two"></span>
+          <span className="hunt-card hunt-card--one"></span>
+          <span className="hunt-card hunt-card--two"></span>
         </div>
       </div>
     </section>
@@ -102,7 +116,7 @@ export default async function Home() {
 
     <section id="about" className="container section about-grid">
       <div className="about-photo-card about-photo-card--portrait">
-        <img src="/about/jam-smiling-actual.jpeg" alt="Jam smiling" />
+        <JamPortrait variant="about" />
       </div>
       <div className="about-copy">
         <p className="eyebrow">MEET JAM</p>
@@ -119,7 +133,7 @@ export default async function Home() {
 
     <section className="container section about-grid reverse">
       <div className="about-photo-card about-photo-card--wide">
-        <img src="/about/Jam-vendor-actual.jpeg" alt="Jam behind a vendor table" />
+        <img src="/about/jam-vendor-actual.jpeg" alt="Jam behind a vendor table" />
       </div>
       <div className="about-copy">
         <p className="eyebrow">CARD SHOWS</p>

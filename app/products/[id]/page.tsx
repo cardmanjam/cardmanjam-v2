@@ -9,21 +9,26 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 async function getProduct(id: string): Promise<Product | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("id", id)
-    .eq("status", "active")
-    .gt("quantity", 0)
-    .maybeSingle();
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .eq("id", id)
+      .eq("status", "active")
+      .gt("quantity", 0)
+      .maybeSingle();
 
-  if (error) {
-    console.error("Product detail fetch error:", error);
+    if (error) {
+      console.error("Product detail fetch error:", error);
+      return null;
+    }
+
+    return data as Product | null;
+  } catch (error) {
+    console.error("Product detail Supabase client error:", error);
     return null;
   }
-
-  return data as Product | null;
 }
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {

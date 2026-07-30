@@ -136,12 +136,29 @@ button, input, select, textarea { font: inherit; }
   border: 1px solid rgba(245, 198, 91, 0.24);
   box-shadow: 0 24px 46px rgba(0,0,0,0.28);
 }
+.portrait-shell {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
 .hero-portrait {
   width: 100%;
   height: min(32rem, 62vh);
   object-fit: cover;
-  object-position: center 10%;
+  object-position: 30% 62%;
+  background: var(--bg);
   border-radius: 1.55rem;
+  display: block;
+}
+
+.about-portrait {
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+  object-fit: cover;
+  object-position: 30% 68%;
   display: block;
 }
 
@@ -165,7 +182,7 @@ section, .hero, .hero-visual, .about-photo-card, .benefit-card, .product-card, .
 .giveaway-section {
   position: relative;
   overflow: hidden;
-  padding: 2.6rem;
+  padding: 2.8rem;
   border-radius: 2rem;
   background: linear-gradient(135deg, rgba(59,130,246,0.24), rgba(245,198,91,0.16));
   border: 1px solid rgba(255,255,255,0.12);
@@ -180,8 +197,92 @@ section, .hero, .hero-visual, .about-photo-card, .benefit-card, .product-card, .
   opacity: 0.18;
   pointer-events: none;
 }
+.hunt-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: 2rem;
+  align-items: center;
+}
+.giveaway-copy { position: relative; z-index: 1; }
 .giveaway-copy h2 { font-size: clamp(1.8rem, 3vw, 2.4rem); margin: 0.25rem 0 0.8rem; }
 .giveaway-copy p { color: var(--text); line-height: 1.7; max-width: 760px; margin: 0.3rem 0; }
+.hunt-support {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f8df9f;
+}
+.hunt-visual {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 280px;
+}
+.hunt-world {
+  position: relative;
+  width: min(100%, 360px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid rgba(245, 198, 91, 0.3);
+  background: radial-gradient(circle at 30% 32%, rgba(245, 198, 91, 0.16), transparent 34%), rgba(255,255,255,0.03);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), 0 20px 48px rgba(0,0,0,0.24);
+  overflow: hidden;
+}
+.hunt-world::before,
+.hunt-world::after {
+  content: "";
+  position: absolute;
+  border: 2px solid rgba(255,255,255,0.14);
+  border-radius: 50%;
+}
+.hunt-world::before {
+  inset: 16% 20% 24% 18%;
+  transform: rotate(-12deg);
+}
+.hunt-world::after {
+  inset: 24% 16% 28% 28%;
+  transform: rotate(16deg);
+}
+.hunt-marker {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 4px rgba(245, 198, 91, 0.18), 0 0 18px rgba(245, 198, 91, 0.55);
+}
+.hunt-marker--nj { left: 24%; top: 66%; }
+.hunt-marker--global { right: 24%; top: 28%; }
+.hunt-path {
+  position: absolute;
+  height: 2px;
+  border-top: 1px dashed rgba(245, 198, 91, 0.5);
+  transform-origin: left center;
+  opacity: 0.9;
+}
+.hunt-path--one { left: 28%; top: 64%; width: 34%; transform: rotate(-24deg); }
+.hunt-path--two { right: 24%; top: 34%; width: 30%; transform: rotate(24deg); }
+.hunt-card {
+  position: absolute;
+  width: 24px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid rgba(245, 198, 91, 0.32);
+  background: linear-gradient(145deg, rgba(255,255,255,0.16), rgba(245, 198, 91, 0.12));
+  box-shadow: 0 8px 16px rgba(0,0,0,0.24);
+}
+.hunt-card--one { left: 36%; top: 22%; transform: rotate(-12deg); }
+.hunt-card--two { right: 24%; bottom: 20%; transform: rotate(12deg); }
+.hunt-marker, .hunt-path, .hunt-card {
+  animation: huntPulse 5s ease-in-out infinite;
+}
+@keyframes huntPulse {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-3px) scale(1.02); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hunt-marker, .hunt-path, .hunt-card { animation: none; }
+}
 
 .feature-grid, .benefit-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
 .feature-card, .benefit-card, .card {
@@ -234,7 +335,13 @@ section, .hero, .hero-visual, .about-photo-card, .benefit-card, .product-card, .
   box-shadow: 0 18px 40px rgba(0,0,0,0.24);
 }
 .about-photo-card img { height: 500px; object-fit: cover; }
-.about-photo-card--portrait img { object-position: center 10%; }
+.about-photo-card--portrait {
+  padding: 0.2rem;
+  border-radius: 1.8rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(245, 198, 91, 0.24);
+  box-shadow: 0 24px 46px rgba(0,0,0,0.28);
+}
 .about-photo-card--wide img { object-position: center 24%; }
 .about-copy h2 { font-size: clamp(1.65rem, 2.2vw, 2.15rem); margin: 0.25rem 0 0.8rem; }
 .about-copy .btn { margin-top: 0.6rem; }
@@ -400,9 +507,12 @@ footer { margin-top: 3rem; padding: 2rem 0 3rem; border-top: 1px solid rgba(255,
 
 @media (max-width: 960px) {
   .hero, .detail-shell, .about-grid { grid-template-columns: 1fr; }
+  .hunt-section { grid-template-columns: 1fr; }
   .hero { padding-top: 4.2rem; }
   .hero-visual { order: -1; }
-  .hero-portrait { height: min(24rem, 50vh); }
+  .hero-portrait { height: min(24rem, 50vh); object-position: 30% 62%; }
+  .about-portrait { min-height: 320px; object-position: 30% 68%; }
+  .hunt-visual { min-height: 220px; }
   .feature-grid, .benefit-grid { grid-template-columns: 1fr 1fr; }
   .detail-panel { position: static; }
   .about-grid.reverse { grid-template-columns: 1fr; }
@@ -417,7 +527,11 @@ footer { margin-top: 3rem; padding: 2rem 0 3rem; border-top: 1px solid rgba(255,
   .header-shell { flex-wrap: wrap; }
   .nav { width: 100%; justify-content: space-between; }
   .hero { padding-top: 3rem; }
-  .hero-portrait { height: min(22rem, 46vh); object-position: center 20%; }
+  .hero-portrait { height: min(22rem, 46vh); object-position: 30% 62%; }
+  .about-portrait { min-height: 280px; object-position: 30% 68%; }
+  .hunt-section { gap: 1.25rem; }
+  .hunt-visual { min-height: 190px; }
+  .giveaway-section { padding: 2rem 1.2rem; }
   .feature-grid, .benefit-grid { grid-template-columns: 1fr; }
   .cta-banner { flex-direction: column; align-items: flex-start; }
   .about-photo-card img { height: 280px; }
