@@ -55,6 +55,8 @@ export default function ProductGrid({ products }: { products: Product[] }) {
     setCompanyFilters([]);
   };
 
+  const hasActiveFilters = categoryFilter !== "all" || languageFilters.length > 0 || companyFilters.length > 0;
+
   return <>
     <div className="filters" style={{ justifyContent: "flex-start", margin: "0 0 18px" }}>
       {(["all", "single", "slab", "sealed"] as const).map((value) =>
@@ -63,7 +65,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
     </div>
     <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center", marginBottom: "1.25rem" }}>
       <span className="eyebrow">{shown.length} items</span>
-      <button className="btn secondary" onClick={clearFilters} type="button">Clear Filters</button>
+      {hasActiveFilters ? <button className="btn secondary" onClick={clearFilters} type="button">Clear Filters</button> : null}
     </div>
     {categoryFilter === "single" ? <div style={{ display: "flex", gap: "0.65rem", flexWrap: "wrap", marginBottom: "1rem" }}>
       {(["English", "Japanese", "Other"] as const).map((language) => <button key={language} type="button" className={`filter ${languageFilters.includes(language) ? "active" : ""}`} onClick={() => toggleLanguage(language)}>{language}</button>)}
