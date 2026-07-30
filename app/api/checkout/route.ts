@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getOrderShippingAmount, getOrderShippingLabel } from "@/lib/shipping";
 
 export const runtime = "nodejs";
 
@@ -29,8 +30,7 @@ export async function POST(request: Request) {
     const unavailable = products.find(p => p.status !== "active" || p.quantity < 1);
     if (unavailable) return NextResponse.json({error:`${unavailable.title} is no longer available.`},{status:409});
 
-    const hasSealed = products.some(p => p.shipping_class === "sealed");
-    const shippingAmount = hasSealed ? 1500 : 500;
+    const shippingAmount = getOrderShippingAmount(products);
     const stripe = new Stripe(stripeSecret);
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
 
@@ -39,6 +39,7 @@ export async function POST(request: Request) {
       success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/cancel`,
       customer_creation: "always",
+      allow_promotion_codes: true,
       shipping_address_collection: { allowed_countries: ["US"] },
       line_items: products.map(p => ({
         quantity: 1,
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
         shipping_rate_data: {
           type: "fixed_amount",
           fixed_amount: { amount: shippingAmount, currency: "usd" },
-          display_name: hasSealed ? "Sealed or mixed-order shipping" : "Tracked card/slab shipping"
+          display_name: getOrderShippingLabel(products)
         }
       }],
       metadata: { product_ids: uniqueIds.join(",") }

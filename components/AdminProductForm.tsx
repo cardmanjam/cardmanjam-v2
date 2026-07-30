@@ -3,6 +3,7 @@ import { ChangeEvent, FormEvent, useRef, useState } from "react";
 import { canUploadProductImages, createProduct, updateProduct } from "@/app/admin/products/new/actions";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { GRADING_COMPANY_OPTIONS, LANGUAGE_OPTIONS, formatGradingCompanyLabel, resolveProductGradingCompany, resolveProductLanguage } from "@/lib/product-metadata";
+import { resolveShippingClass } from "@/lib/shipping";
 import type { Product } from "@/lib/types";
 
 type SelectedImage = {
@@ -32,6 +33,7 @@ export default function AdminProductForm({ mode, initialProduct = null }: AdminP
   const resolvedLanguage = initialProduct ? resolveProductLanguage(initialProduct) : null;
   const resolvedGradingCompany = initialProduct ? resolveProductGradingCompany(initialProduct) : null;
   const existingImageUrls = initialProduct?.image_urls ?? [];
+  const shippingClass = resolveShippingClass(selectedCategory);
 
   const handleImageSelection = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
@@ -118,7 +120,6 @@ export default function AdminProductForm({ mode, initialProduct = null }: AdminP
       const price = (formRef.current.elements.namedItem("price") as HTMLInputElement | null)?.value ?? "";
       const quantity = (formRef.current.elements.namedItem("quantity") as HTMLInputElement | null)?.value ?? "1";
       const category = (formRef.current.elements.namedItem("category") as HTMLSelectElement | null)?.value ?? "single";
-      const shippingClass = (formRef.current.elements.namedItem("shipping_class") as HTMLSelectElement | null)?.value ?? "card";
       const condition = (formRef.current.elements.namedItem("condition") as HTMLInputElement | null)?.value ?? "";
       const description = (formRef.current.elements.namedItem("description") as HTMLTextAreaElement | null)?.value ?? "";
       const vaultNote = (formRef.current.elements.namedItem("vault_note") as HTMLTextAreaElement | null)?.value ?? "";
@@ -135,7 +136,7 @@ export default function AdminProductForm({ mode, initialProduct = null }: AdminP
       formData.set("price", price);
       formData.set("quantity", quantity);
       formData.set("category", category);
-      formData.set("shipping_class", shippingClass);
+      formData.set("shipping_class", category === "sealed" ? "sealed" : "card");
       formData.set("condition", condition);
       formData.set("description", description);
       formData.set("vault_note", vaultNote);
@@ -166,7 +167,7 @@ export default function AdminProductForm({ mode, initialProduct = null }: AdminP
         <div className="field"><label>Price ($)</label><input name="price" type="number" min="0.01" step="0.01" required defaultValue={initialProduct ? (initialProduct.price_cents / 100).toFixed(2) : ""}/></div>
         <div className="field"><label>Quantity</label><input name="quantity" type="number" defaultValue={initialProduct?.quantity ?? 1} min="1" required/></div>
         <div className="field"><label>Card Type</label><select name="category" value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value as "single" | "slab" | "sealed") }><option value="single">Raw / Ungraded</option><option value="slab">Graded</option><option value="sealed">Sealed Product</option></select></div>
-        <div className="field"><label>Shipping</label><select name="shipping_class" defaultValue={initialProduct?.shipping_class ?? "card"}><option value="card">$5 Card/Slab</option><option value="sealed">$15 Sealed</option></select></div>
+        <div className="field"><label>Shipping</label><input name="shipping_class" value={shippingClass === "sealed" ? "$15 Sealed" : "$5 Card/Slab"} readOnly aria-readonly="true" /></div>
         <div className="field full"><label>Condition</label><input name="condition" placeholder="LP, PSA 9, factory sealed..." defaultValue={initialProduct?.condition ?? ""}/></div>
         <div className="field full"><label>Description</label><textarea name="description" defaultValue={initialProduct?.description ?? ""}/></div>
         <div className="field full"><label>Why it&apos;s in the Vault</label><textarea name="vault_note" defaultValue={initialProduct?.vault_note ?? ""}/></div>

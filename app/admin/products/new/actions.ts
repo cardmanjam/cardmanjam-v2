@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeGradingCompanyValue, normalizeLanguageValue } from "@/lib/product-metadata";
+import { resolveShippingClass } from "@/lib/shipping";
 
 function slugify(s:string){return s.toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");}
 
@@ -33,6 +34,7 @@ export async function createProduct(formData:FormData, image_urls:string[] = [])
   const title = String(formData.get("title") || "");
   const urls = parseImageUrls(formData, image_urls);
   const category = String(formData.get("category") || "single");
+  const shippingClass = resolveShippingClass(category === "sealed" ? "sealed" : category === "slab" ? "slab" : "single");
   const language = normalizeLanguageValue(String(formData.get("language") || ""));
   const gradingCompany = category === "slab" ? normalizeGradingCompanyValue(String(formData.get("grading_company") || "")) : null;
   const grade = category === "slab" ? String(formData.get("grade") || "").trim() : null;
@@ -50,7 +52,7 @@ export async function createProduct(formData:FormData, image_urls:string[] = [])
     vault_note: String(formData.get("vault_note") || ""),
     condition: String(formData.get("condition") || ""),
     category,
-    shipping_class: String(formData.get("shipping_class")),
+    shipping_class: shippingClass,
     price_cents: Math.round(Number(formData.get("price")) * 100),
     quantity: Number(formData.get("quantity") || 1),
     status: formData.get("publish_immediately") === "on" ? "active" : "draft",
@@ -71,6 +73,7 @@ export async function updateProduct(formData:FormData, image_urls:string[] = [])
   const title = String(formData.get("title") || "");
   const urls = parseImageUrls(formData, image_urls);
   const category = String(formData.get("category") || "single");
+  const shippingClass = resolveShippingClass(category === "sealed" ? "sealed" : category === "slab" ? "slab" : "single");
   const language = normalizeLanguageValue(String(formData.get("language") || ""));
   const gradingCompany = category === "slab" ? normalizeGradingCompanyValue(String(formData.get("grading_company") || "")) : null;
   const grade = category === "slab" ? String(formData.get("grade") || "").trim() : null;
@@ -90,7 +93,7 @@ export async function updateProduct(formData:FormData, image_urls:string[] = [])
       vault_note: String(formData.get("vault_note") || ""),
       condition: String(formData.get("condition") || ""),
       category,
-      shipping_class: String(formData.get("shipping_class") || "card"),
+      shipping_class: shippingClass,
       price_cents: Math.round(Number(formData.get("price")) * 100),
       quantity: Number(formData.get("quantity") || 1),
       status: formData.get("publish_immediately") === "on" ? "active" : "draft",
