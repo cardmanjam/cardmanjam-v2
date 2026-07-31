@@ -347,6 +347,9 @@ section, .hero, .hero-visual, .about-photo-card, .benefit-card, .product-card, .
   gap: 1.5rem;
   align-items: center;
 }
+.about-grid--text-only {
+  grid-template-columns: 1fr;
+}
 .about-photo-card {
   border-radius: 1.75rem;
   overflow: hidden;

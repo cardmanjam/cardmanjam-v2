@@ -130,10 +130,7 @@ export default async function Home() {
       </div>
     </section>
 
-    <section id="about" className="container section about-grid">
-      <div className="about-photo-card about-photo-card--portrait">
-        <JamPortrait variant="about" />
-      </div>
+    <section id="about" className="container section about-grid about-grid--text-only">
       <div className="about-copy">
         <p className="eyebrow">MEET JAM</p>
         <h2>Hey, I'm Jam.</h2>
