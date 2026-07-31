@@ -8,8 +8,6 @@ export default function CartDrawer() {
   const cart = useCart();
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [promoCode, setPromoCode] = useState("");
-  const [promoError, setPromoError] = useState("");
   const total = cart.items.reduce((s, x) => s + x.price_cents, 0);
   const shipping = getOrderShippingAmount(cart.items);
 
@@ -26,35 +24,23 @@ export default function CartDrawer() {
     };
   }, [mounted]);
 
-  useEffect(() => {
-    if (!cart.items.length) {
-      setPromoCode("");
-      setPromoError("");
-    }
-  }, [cart.items.length]);
-
   async function checkout() {
     if (!cart.items.length) return;
     try {
       setLoading(true);
-      setPromoError("");
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-          productIds: cart.items.map((x) => x.id),
-          ...(promoCode.trim() ? { promoCode: promoCode.trim() } : {})
-        })
+        body: JSON.stringify({ productIds: cart.items.map((x) => x.id) })
       });
       const data = await response.json();
       if (!response.ok) {
-        const message = data.error || "Checkout failed.";
-        setPromoError(message);
+        alert(data.error || "Checkout failed.");
         return;
       }
       window.location.assign(data.url);
     } catch {
-      setPromoError("Checkout failed.");
+      alert("Checkout failed.");
     } finally {
       setLoading(false);
     }
@@ -76,25 +62,6 @@ export default function CartDrawer() {
         <p>Items: <strong>${(total/100).toFixed(2)}</strong></p>
         <p>Shipping: <strong>${(shipping/100).toFixed(2)}</strong></p>
         <p>Tax and any discount codes are handled securely by Stripe at checkout.</p>
-        <div className="field" style={{marginTop:"0.5rem"}}>
-          <label htmlFor="promo-code">Promo code</label>
-          <input
-            id="promo-code"
-            value={promoCode}
-            onChange={(event) => {
-              setPromoCode(event.target.value);
-              if (promoError) setPromoError("");
-            }}
-            autoComplete="off"
-            autoCapitalize="off"
-            autoCorrect="off"
-            inputMode="text"
-            spellCheck={false}
-            data-1p-ignore="true"
-            data-lpignore="true"
-          />
-        </div>
-        {promoError ? <p style={{ color: "#b91c1c", marginTop: "0.5rem" }}>{promoError}</p> : null}
         <button className="btn" disabled={loading} onClick={checkout}>
           {loading ? "OPENING STRIPE..." : "CONTINUE TO STRIPE CHECKOUT"}
         </button>

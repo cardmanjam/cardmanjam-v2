@@ -69,7 +69,7 @@ set search_path = public
 as $$
 declare
   normalized_product_ids uuid[];
-  reservation_expires_at timestamptz := now() + interval '30 minutes';
+  reservation_expires_at timestamptz := now() + interval '35 minutes';
   product_snapshot jsonb;
   unavailable_title text;
   existing_count integer;

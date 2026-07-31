@@ -63,12 +63,6 @@ async function buildProductDetails(db: ReturnType<typeof createAdminClient>, pro
   return (data ?? []) as ProductSnapshot[];
 }
 
-function attachPromoMetadata(productDetails: ProductSnapshot[], promoCode: string | null) {
-  if (!promoCode) return productDetails;
-
-  return [...productDetails, { id: `promo-${promoCode}`, title: `Promo code ${promoCode}` } as ProductSnapshot];
-}
-
 async function finalizePaidSession(stripe: Stripe, session: Stripe.Checkout.Session) {
   const db = createAdminClient();
   const productIds = parseProductIds(session);
@@ -94,7 +88,7 @@ async function finalizePaidSession(stripe: Stripe, session: Stripe.Checkout.Sess
   });
 
   const receiptUrl = getReceiptUrl(paymentIntent);
-  const productDetails = attachPromoMetadata(await buildProductDetails(db, productIds), session.metadata?.promo_code ?? null);
+  const productDetails = await buildProductDetails(db, productIds);
   const reservationId = session.metadata?.reservation_id || null;
   const amountTotal = session.amount_total ?? 0;
   const shippingTotal = session.total_details?.amount_shipping ?? 0;
