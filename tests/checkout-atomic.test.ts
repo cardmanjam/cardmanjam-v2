@@ -96,6 +96,7 @@ test("normal single checkout keeps $5 shipping and extends the reservation expir
   assert.equal(stripeMock.calls.length, 1);
   assert.equal((stripeMock.calls[0].shipping_options as Array<{ shipping_rate_data: { fixed_amount: { amount: number } } }>)[0].shipping_rate_data.fixed_amount.amount, 500);
   assert.equal(dbMock.updates[0].table, "inventory_reservations");
+  assert.ok(dbMock.updates.every((update) => update.table === "inventory_reservations"));
   assert.equal((stripeMock.calls[0].expires_at as number), Math.floor(new Date("2026-01-01T12:35:05.000Z").getTime() / 1000));
   assert.ok(String((stripeMock.calls[0].metadata as Record<string, unknown>).product_ids).includes("11111111-1111-4111-8111-111111111111"));
   assert.equal("promotion_type" in (stripeMock.calls[0].metadata as Record<string, unknown>), false);
@@ -136,11 +137,11 @@ test("sealed checkout keeps $15 shipping", async () => {
   assert.equal((stripeMock.calls[0].shipping_options as Array<{ shipping_rate_data: { fixed_amount: { amount: number } } }>)[0].shipping_rate_data.fixed_amount.amount, 1500);
 });
 
-test("a second concurrent reservation failure returns 409 unavailable", async () => {
+test("a second concurrent reservation failure returns a friendly 409 while the product remains available to browse", async () => {
   const dbMock = createDbMock({
     reserve: {
       data: null,
-      error: { message: "Shiftry is already reserved or sold." }
+      error: { message: "Another shopper is currently checking out this card. Please try again shortly." }
     }
   });
   const stripeMock = createStripeMock();
@@ -158,7 +159,7 @@ test("a second concurrent reservation failure returns 409 unavailable", async ()
   assert.equal(result.ok, false);
   if (!result.ok) {
     assert.equal(result.status, 409);
-    assert.match(result.error, /reserved or sold/i);
+    assert.match(result.error, /currently checking out/i);
   }
   assert.equal(stripeMock.calls.length, 0);
 });
@@ -182,6 +183,7 @@ test("stripe session creation failure releases the reservation", async () => {
 
   assert.equal(result.ok, false);
   assert.ok(dbMock.rpcCalls.some((call) => call.name === "release_checkout_inventory"));
+  assert.ok(dbMock.updates.every((update) => update.table === "inventory_reservations"));
 });
 
 test("blank ordinary checkout contains no promo behavior", async () => {
@@ -267,6 +269,7 @@ test("invalid code releases reservation", async () => {
     assert.equal(result.error, "Promo code is invalid.");
   }
   assert.ok(dbMock.rpcCalls.some((call) => call.name === "release_checkout_inventory"));
+  assert.ok(dbMock.updates.every((update) => update.table === "inventory_reservations"));
   assert.equal(stripeMock.calls.length, 0);
 });
 
@@ -307,6 +310,7 @@ test("over-$25 promo attempt releases reservation", async () => {
     assert.equal(result.status, 409);
   }
   assert.ok(dbMock.rpcCalls.some((call) => call.name === "release_checkout_inventory"));
+  assert.ok(dbMock.updates.every((update) => update.table === "inventory_reservations"));
   assert.equal(stripeMock.calls.length, 0);
 });
 
@@ -347,6 +351,7 @@ test("sealed promo attempt releases reservation", async () => {
     assert.equal(result.status, 409);
   }
   assert.ok(dbMock.rpcCalls.some((call) => call.name === "release_checkout_inventory"));
+  assert.ok(dbMock.updates.every((update) => update.table === "inventory_reservations"));
   assert.equal(stripeMock.calls.length, 0);
 });
 
@@ -372,6 +377,7 @@ test("missing environment variable returns a generic error and releases reservat
     assert.equal(result.error, "Promo code is unavailable right now.");
   }
   assert.ok(dbMock.rpcCalls.some((call) => call.name === "release_checkout_inventory"));
+  assert.ok(dbMock.updates.every((update) => update.table === "inventory_reservations"));
   assert.equal(stripeMock.calls.length, 0);
 });
 
@@ -380,7 +386,7 @@ test("two concurrent eligible checkouts still produce one Stripe success and one
   const failDbMock = createDbMock({
     reserve: {
       data: null,
-      error: { message: "Shiftry is already reserved or sold." }
+      error: { message: "Another shopper is currently checking out this card. Please try again shortly." }
     }
   });
   const successStripeMock = createStripeMock();

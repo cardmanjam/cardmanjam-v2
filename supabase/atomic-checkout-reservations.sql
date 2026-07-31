@@ -73,6 +73,7 @@ declare
   product_snapshot jsonb;
   unavailable_title text;
   existing_count integer;
+  conflicting_reservation_id uuid;
 begin
   perform public.require_service_role();
 
@@ -108,7 +109,20 @@ begin
   limit 1;
 
   if unavailable_title is not null then
-    raise exception '% is already reserved or sold.', unavailable_title using errcode = 'P0001';
+    raise exception '% is no longer available.', unavailable_title using errcode = 'P0001';
+  end if;
+
+  select ir.id
+    into conflicting_reservation_id
+  from public.inventory_reservations ir
+  where ir.status = 'pending'
+    and ir.expires_at > now()
+    and ir.product_ids && normalized_product_ids
+  order by ir.created_at asc
+  limit 1;
+
+  if conflicting_reservation_id is not null then
+    raise exception 'Another shopper is currently checking out this card. Please try again shortly.' using errcode = 'P0001';
   end if;
 
   select coalesce(
@@ -126,12 +140,6 @@ begin
   )
     into product_snapshot
   from public.products p
-  where p.id = any(normalized_product_ids);
-
-  update public.products p
-  set quantity = p.quantity - 1,
-      status = case when p.quantity - 1 = 0 then 'reserved' else 'active' end,
-      updated_at = now()
   where p.id = any(normalized_product_ids);
 
   insert into public.inventory_reservations as ir (product_ids, product_details, status, expires_at, created_at, updated_at)
@@ -161,17 +169,11 @@ begin
   where ir.id = release_checkout_inventory.reservation_id
   for update;
 
-  if not found or reservation.status in ('released', 'expired') then
+  if not found or reservation.status in ('released', 'expired', 'paid') then
     return;
   end if;
 
-  update public.products p
-  set quantity = p.quantity + 1,
-      status = 'active',
-      updated_at = now()
-  where p.id = any(reservation.product_ids);
-
-    update public.inventory_reservations ir
+  update public.inventory_reservations ir
     set status = release_status,
       updated_at = now()
     where ir.id = release_checkout_inventory.reservation_id;
@@ -199,12 +201,29 @@ as $$
 declare
   reservation record;
   order_id uuid;
+  existing_order_status text;
   order_status text := 'paid';
   reservation_status text := 'missing';
   final_product_ids uuid[] := coalesce(product_ids, '{}'::uuid[]);
   final_product_details jsonb := coalesce(product_details, '[]'::jsonb);
+  unavailable_title text;
+  existing_count integer;
 begin
   perform public.require_service_role();
+
+  select o.id, o.status
+    into order_id, existing_order_status
+  from public.orders o
+  where o.stripe_session_id = finalize_reserved_checkout.stripe_session_id
+  for update;
+
+  if found then
+    return jsonb_build_object(
+      'order_id', order_id,
+      'status', existing_order_status,
+      'reservation_status', 'existing'
+    );
+  end if;
 
   select *
     into reservation
@@ -219,16 +238,54 @@ begin
 
     if reservation.status in ('released', 'expired') then
       order_status := 'manual_review';
+    elsif reservation.status = 'paid' then
+      order_status := 'manual_review';
+    elsif reservation.stripe_checkout_session_id is not null
+      and reservation.stripe_checkout_session_id <> finalize_reserved_checkout.stripe_session_id then
+      order_status := 'manual_review';
     else
-      if reservation.stripe_checkout_session_id is null then
+      select count(*)
+        into existing_count
+      from public.products p
+      where p.id = any(final_product_ids);
+
+      if existing_count <> coalesce(array_length(final_product_ids, 1), 0) then
+        order_status := 'manual_review';
+      else
+        perform 1
+        from public.products p
+        where p.id = any(final_product_ids)
+        order by p.id
+        for update;
+
+        select p.title
+          into unavailable_title
+        from public.products p
+        where p.id = any(final_product_ids)
+          and (p.status <> 'active' or p.quantity <= 0)
+        order by p.id
+        limit 1;
+
+        if unavailable_title is not null then
+          order_status := 'manual_review';
+        else
+          update public.products p
+          set quantity = p.quantity - 1,
+              status = case when p.quantity - 1 = 0 then 'sold' else 'active' end,
+              updated_at = now()
+          where p.id = any(final_product_ids);
+        end if;
+      end if;
+
+      if order_status = 'paid' then
         update public.inventory_reservations ir
-        set stripe_checkout_session_id = finalize_reserved_checkout.stripe_session_id,
+        set stripe_checkout_session_id = coalesce(ir.stripe_checkout_session_id, finalize_reserved_checkout.stripe_session_id),
             status = 'paid',
             updated_at = now()
         where ir.id = finalize_reserved_checkout.reservation_id;
       else
         update public.inventory_reservations ir
-        set status = 'paid',
+        set stripe_checkout_session_id = coalesce(ir.stripe_checkout_session_id, finalize_reserved_checkout.stripe_session_id),
             updated_at = now()
         where ir.id = finalize_reserved_checkout.reservation_id;
       end if;
@@ -315,10 +372,25 @@ declare
   existing_count integer;
   unavailable_title text;
   order_id uuid;
+  existing_order_status text;
   order_status text := 'paid';
   final_product_details jsonb := coalesce(product_details, '[]'::jsonb);
 begin
   perform public.require_service_role();
+
+  select o.id, o.status
+    into order_id, existing_order_status
+  from public.orders o
+  where o.stripe_session_id = finalize_legacy_checkout.stripe_session_id
+  for update;
+
+  if found then
+    return jsonb_build_object(
+      'order_id', order_id,
+      'status', existing_order_status,
+      'reservation_status', 'existing'
+    );
+  end if;
 
   select coalesce(array_agg(distinct product_id order by product_id), '{}'::uuid[])
     into normalized_product_ids
@@ -372,7 +444,7 @@ begin
 
       update public.products p
       set quantity = p.quantity - 1,
-          status = case when p.quantity - 1 = 0 then 'reserved' else 'active' end,
+          status = case when p.quantity - 1 = 0 then 'sold' else 'active' end,
           updated_at = now()
       where p.id = any(normalized_product_ids);
     end if;

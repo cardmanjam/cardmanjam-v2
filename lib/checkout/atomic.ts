@@ -152,7 +152,12 @@ export async function createAtomicCheckoutSession(productIds: unknown, deps: Che
         error: message
       });
 
-      if (lowered.includes("reserved or sold") || lowered.includes("no longer exist") || lowered.includes("cart is empty")) {
+      if (
+        lowered.includes("currently checking out") ||
+        lowered.includes("no longer available") ||
+        lowered.includes("no longer exist") ||
+        lowered.includes("cart is empty")
+      ) {
         return { ok: false, status: lowered.includes("cart is empty") ? 400 : 409, error: message };
       }
 
