@@ -52,10 +52,10 @@ export default async function Success({ searchParams }: SuccessPageProps) {
             {order.shipping_carrier ? <p>Carrier: {order.shipping_carrier}</p> : null}
             {order.tracking_number ? <p>Tracking: {order.tracking_number}</p> : null}
           </div>
-          {order.receipt_url ? <a className="btn" href={order.receipt_url} target="_blank" rel="noreferrer">View Receipt</a> : <p>Your Stripe receipt will appear here once payment processing completes.</p>}
+          {order.receipt_url ? <a className="btn" href={order.receipt_url} target="_blank" rel="noreferrer">View receipt.</a> : <p>Thank you for your order! A payment receipt has been emailed to the address used at checkout. We’ll send another email with tracking information as soon as your order ships.</p>}
         </div>
       ) : (
-        <p>Your payment finished successfully. I’m finalizing the record now; check back here in a moment for your receipt link.</p>
+        <p>Thank you for your order! A payment receipt has been emailed to the address used at checkout. We’ll send another email with tracking information as soon as your order ships.</p>
       )}
       <div style={{ display: "flex", justifyContent: "center", gap: "0.75rem", flexWrap: "wrap", marginTop: "1.5rem" }}>
         <a className="btn secondary" href="/">Return to My Vault</a>
