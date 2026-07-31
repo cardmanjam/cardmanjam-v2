@@ -79,7 +79,7 @@ begin
 
   select coalesce(array_agg(distinct product_id order by product_id), '{}'::uuid[])
     into normalized_product_ids
-  from unnest(coalesce(requested_product_ids, '{}'::uuid[])) as product_id;
+  from unnest(coalesce(reserve_checkout_inventory.requested_product_ids, '{}'::uuid[])) as product_id;
 
   if coalesce(array_length(normalized_product_ids, 1), 0) = 0 then
     raise exception 'Cart is empty.' using errcode = '22023';
@@ -163,7 +163,14 @@ declare
 begin
   perform public.require_service_role();
 
-  select *
+  select ir.id,
+    ir.stripe_checkout_session_id,
+    ir.product_ids,
+    ir.product_details,
+    ir.status,
+    ir.expires_at,
+    ir.created_at,
+    ir.updated_at
     into reservation
   from public.inventory_reservations ir
   where ir.id = release_checkout_inventory.reservation_id
@@ -225,7 +232,14 @@ begin
     );
   end if;
 
-  select *
+  select ir.id,
+    ir.stripe_checkout_session_id,
+    ir.product_ids,
+    ir.product_details,
+    ir.status,
+    ir.expires_at,
+    ir.created_at,
+    ir.updated_at
     into reservation
   from public.inventory_reservations ir
   where ir.id = finalize_reserved_checkout.reservation_id
@@ -294,7 +308,7 @@ begin
     order_status := 'manual_review';
   end if;
 
-  insert into public.orders (
+  insert into public.orders as o (
     stripe_session_id,
     stripe_payment_intent_id,
     customer_email,
@@ -311,36 +325,36 @@ begin
     tracking_number
   )
   values (
-    stripe_session_id,
-    stripe_payment_intent_id,
-    customer_email,
-    customer_name,
-    shipping_address,
-    amount_total,
-    shipping_total,
+    finalize_reserved_checkout.stripe_session_id,
+    finalize_reserved_checkout.stripe_payment_intent_id,
+    finalize_reserved_checkout.customer_email,
+    finalize_reserved_checkout.customer_name,
+    finalize_reserved_checkout.shipping_address,
+    finalize_reserved_checkout.amount_total,
+    finalize_reserved_checkout.shipping_total,
     order_status,
     final_product_ids,
     final_product_details,
-    receipt_url,
+    finalize_reserved_checkout.receipt_url,
     'unfulfilled',
     null,
     null
   )
-  on conflict (stripe_session_id) do update
-  set stripe_payment_intent_id = coalesce(public.orders.stripe_payment_intent_id, excluded.stripe_payment_intent_id),
-      customer_email = coalesce(public.orders.customer_email, excluded.customer_email),
-      customer_name = coalesce(public.orders.customer_name, excluded.customer_name),
-      shipping_address = coalesce(public.orders.shipping_address, excluded.shipping_address),
-      amount_total = greatest(public.orders.amount_total, excluded.amount_total),
-      shipping_total = greatest(public.orders.shipping_total, excluded.shipping_total),
-      status = case when public.orders.status = 'manual_review' then public.orders.status else excluded.status end,
-      product_ids = case when coalesce(array_length(public.orders.product_ids, 1), 0) = 0 then excluded.product_ids else public.orders.product_ids end,
-      product_details = case when coalesce(jsonb_array_length(public.orders.product_details), 0) = 0 then excluded.product_details else public.orders.product_details end,
-      receipt_url = coalesce(public.orders.receipt_url, excluded.receipt_url),
-      fulfillment_status = coalesce(public.orders.fulfillment_status, excluded.fulfillment_status),
-      shipping_carrier = coalesce(public.orders.shipping_carrier, excluded.shipping_carrier),
-      tracking_number = coalesce(public.orders.tracking_number, excluded.tracking_number)
-  returning id into order_id;
+  on conflict on constraint orders_stripe_session_id_key do update
+  set stripe_payment_intent_id = coalesce(o.stripe_payment_intent_id, excluded.stripe_payment_intent_id),
+      customer_email = coalesce(o.customer_email, excluded.customer_email),
+      customer_name = coalesce(o.customer_name, excluded.customer_name),
+      shipping_address = coalesce(o.shipping_address, excluded.shipping_address),
+      amount_total = greatest(o.amount_total, excluded.amount_total),
+      shipping_total = greatest(o.shipping_total, excluded.shipping_total),
+      status = case when o.status = 'manual_review' then o.status else excluded.status end,
+      product_ids = case when coalesce(array_length(o.product_ids, 1), 0) = 0 then excluded.product_ids else o.product_ids end,
+      product_details = case when coalesce(jsonb_array_length(o.product_details), 0) = 0 then excluded.product_details else o.product_details end,
+      receipt_url = coalesce(o.receipt_url, excluded.receipt_url),
+      fulfillment_status = coalesce(o.fulfillment_status, excluded.fulfillment_status),
+      shipping_carrier = coalesce(o.shipping_carrier, excluded.shipping_carrier),
+      tracking_number = coalesce(o.tracking_number, excluded.tracking_number)
+  returning o.id into order_id;
 
   return jsonb_build_object(
     'order_id', order_id,
@@ -394,7 +408,7 @@ begin
 
   select coalesce(array_agg(distinct product_id order by product_id), '{}'::uuid[])
     into normalized_product_ids
-  from unnest(coalesce(product_ids, '{}'::uuid[])) as product_id;
+  from unnest(coalesce(finalize_legacy_checkout.product_ids, '{}'::uuid[])) as product_id;
 
   if coalesce(array_length(normalized_product_ids, 1), 0) = 0 then
     raise exception 'Cart is empty.' using errcode = '22023';
@@ -450,7 +464,7 @@ begin
     end if;
   end if;
 
-  insert into public.orders (
+  insert into public.orders as o (
     stripe_session_id,
     stripe_payment_intent_id,
     customer_email,
@@ -467,36 +481,36 @@ begin
     tracking_number
   )
   values (
-    stripe_session_id,
-    stripe_payment_intent_id,
-    customer_email,
-    customer_name,
-    shipping_address,
-    amount_total,
-    shipping_total,
+    finalize_legacy_checkout.stripe_session_id,
+    finalize_legacy_checkout.stripe_payment_intent_id,
+    finalize_legacy_checkout.customer_email,
+    finalize_legacy_checkout.customer_name,
+    finalize_legacy_checkout.shipping_address,
+    finalize_legacy_checkout.amount_total,
+    finalize_legacy_checkout.shipping_total,
     order_status,
     normalized_product_ids,
     final_product_details,
-    receipt_url,
+    finalize_legacy_checkout.receipt_url,
     'unfulfilled',
     null,
     null
   )
-  on conflict (stripe_session_id) do update
-  set stripe_payment_intent_id = coalesce(public.orders.stripe_payment_intent_id, excluded.stripe_payment_intent_id),
-      customer_email = coalesce(public.orders.customer_email, excluded.customer_email),
-      customer_name = coalesce(public.orders.customer_name, excluded.customer_name),
-      shipping_address = coalesce(public.orders.shipping_address, excluded.shipping_address),
-      amount_total = greatest(public.orders.amount_total, excluded.amount_total),
-      shipping_total = greatest(public.orders.shipping_total, excluded.shipping_total),
-      status = case when public.orders.status = 'manual_review' then public.orders.status else excluded.status end,
-      product_ids = case when coalesce(array_length(public.orders.product_ids, 1), 0) = 0 then excluded.product_ids else public.orders.product_ids end,
-      product_details = case when coalesce(jsonb_array_length(public.orders.product_details), 0) = 0 then excluded.product_details else public.orders.product_details end,
-      receipt_url = coalesce(public.orders.receipt_url, excluded.receipt_url),
-      fulfillment_status = coalesce(public.orders.fulfillment_status, excluded.fulfillment_status),
-      shipping_carrier = coalesce(public.orders.shipping_carrier, excluded.shipping_carrier),
-      tracking_number = coalesce(public.orders.tracking_number, excluded.tracking_number)
-  returning id into order_id;
+  on conflict on constraint orders_stripe_session_id_key do update
+  set stripe_payment_intent_id = coalesce(o.stripe_payment_intent_id, excluded.stripe_payment_intent_id),
+      customer_email = coalesce(o.customer_email, excluded.customer_email),
+      customer_name = coalesce(o.customer_name, excluded.customer_name),
+      shipping_address = coalesce(o.shipping_address, excluded.shipping_address),
+      amount_total = greatest(o.amount_total, excluded.amount_total),
+      shipping_total = greatest(o.shipping_total, excluded.shipping_total),
+      status = case when o.status = 'manual_review' then o.status else excluded.status end,
+      product_ids = case when coalesce(array_length(o.product_ids, 1), 0) = 0 then excluded.product_ids else o.product_ids end,
+      product_details = case when coalesce(jsonb_array_length(o.product_details), 0) = 0 then excluded.product_details else o.product_details end,
+      receipt_url = coalesce(o.receipt_url, excluded.receipt_url),
+      fulfillment_status = coalesce(o.fulfillment_status, excluded.fulfillment_status),
+      shipping_carrier = coalesce(o.shipping_carrier, excluded.shipping_carrier),
+      tracking_number = coalesce(o.tracking_number, excluded.tracking_number)
+  returning o.id into order_id;
 
   return jsonb_build_object(
     'order_id', order_id,
