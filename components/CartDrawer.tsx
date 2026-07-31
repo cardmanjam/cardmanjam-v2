@@ -43,7 +43,7 @@ export default function CartDrawer() {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
           productIds: cart.items.map((x) => x.id),
-          promoCode: promoCode.trim()
+          ...(promoCode.trim() ? { promoCode: promoCode.trim() } : {})
         })
       });
       const data = await response.json();
@@ -80,15 +80,18 @@ export default function CartDrawer() {
           <label htmlFor="promo-code">Promo code</label>
           <input
             id="promo-code"
-            name="promo-code"
             value={promoCode}
             onChange={(event) => {
               setPromoCode(event.target.value);
               if (promoError) setPromoError("");
             }}
-            placeholder="TESTJAM"
             autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            inputMode="text"
             spellCheck={false}
+            data-1p-ignore="true"
+            data-lpignore="true"
           />
         </div>
         {promoError ? <p style={{ color: "#b91c1c", marginTop: "0.5rem" }}>{promoError}</p> : null}

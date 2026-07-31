@@ -27,7 +27,7 @@ function formatCurrency(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-async function releaseReservation(reservationId: string, status: "released" | "expired" = "released") {
+async function releaseReservationQuietly(reservationId: string, status: "released" | "expired" = "released") {
   const db = createAdminClient();
   const { error } = await db.rpc("release_checkout_inventory", {
     reservation_id: reservationId,
@@ -35,7 +35,7 @@ async function releaseReservation(reservationId: string, status: "released" | "e
   });
 
   if (error) {
-    throw error;
+    console.error("Failed to release reservation", { reservationId, status, error: error.message });
   }
 }
 
@@ -68,6 +68,11 @@ export async function POST(request: Request) {
     if (reservationError) {
       const message = reservationError.message || "Checkout failed.";
       const lowered = message.toLowerCase();
+      console.error("Checkout reservation failed", {
+        requestedCount: normalizedIds.length,
+        promoProvided: typeof promoCode === "string" && promoCode.trim().length > 0,
+        error: message
+      });
       if (lowered.includes("reserved or sold") || lowered.includes("no longer exist") || lowered.includes("cart is empty")) {
         return NextResponse.json({error: message},{status: lowered.includes("cart is empty") ? 400 : 409});
       }
@@ -86,32 +91,34 @@ export async function POST(request: Request) {
     const normalizedPromoCode = normalizePromoCode(promoCode);
     let effectiveShippingAmount = shippingAmount;
     let shippingLabel = getOrderShippingLabel(reservedProducts);
+    let usePaidShippingOption = true;
 
     if (normalizedPromoCode) {
       if (normalizedPromoCode !== TESTJAM_CODE) {
-        await releaseReservation(reservationId);
+        await releaseReservationQuietly(reservationId);
         return NextResponse.json({error: `Promo code ${normalizedPromoCode} is not valid.`},{status:400});
       }
 
       if (reservedProducts.some((product) => product.shipping_class === "sealed")) {
-        await releaseReservation(reservationId);
+        await releaseReservationQuietly(reservationId);
         return NextResponse.json({error: "TESTJAM cannot be used when your cart contains sealed products."},{status:409});
       }
 
       if (merchandiseSubtotal > 2500) {
-        await releaseReservation(reservationId);
+        await releaseReservationQuietly(reservationId);
         return NextResponse.json({error: `TESTJAM is only valid when your merchandise subtotal is ${formatCurrency(2500)} or less.`},{status:409});
       }
 
       effectiveShippingAmount = 0;
       shippingLabel = "Free shipping — TESTJAM";
+      usePaidShippingOption = false;
     }
 
     const stripe = new Stripe(stripeSecret);
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
     const sessionExpiresAt = Math.floor(new Date(reservation.expires_at as string).getTime() / 1000);
 
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",
       success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/cancel`,
@@ -127,19 +134,36 @@ export async function POST(request: Request) {
           product_data: { name: p.title, metadata: { product_id: p.id } }
         }
       })),
-      shipping_options: [{
-        shipping_rate_data: {
-          type: "fixed_amount",
-          fixed_amount: { amount: effectiveShippingAmount, currency: "usd" },
-          display_name: shippingLabel
-        }
-      }],
       metadata: {
         reservation_id: reservationId,
         product_ids: normalizedIds.join(","),
         promo_code: normalizedPromoCode || ""
       }
-    });
+    };
+
+    if (usePaidShippingOption) {
+      sessionParams.shipping_options = [{
+        shipping_rate_data: {
+          type: "fixed_amount",
+          fixed_amount: { amount: effectiveShippingAmount, currency: "usd" },
+          display_name: shippingLabel
+        }
+      }];
+    }
+
+    let session: Stripe.Checkout.Session;
+    try {
+      session = await stripe.checkout.sessions.create(sessionParams);
+    } catch (error) {
+      console.error("Stripe Checkout Session creation failed", {
+        reservationId,
+        promoApplied: normalizedPromoCode === TESTJAM_CODE,
+        itemCount: reservedProducts.length,
+        shippingAmount: effectiveShippingAmount,
+        error: error instanceof Error ? error.message : "Unknown Stripe error"
+      });
+      throw error;
+    }
 
     const { error: sessionLinkError } = await db
       .from("inventory_reservations")
@@ -158,7 +182,7 @@ export async function POST(request: Request) {
   } catch (e) {
     if (reservationId) {
       try {
-        await releaseReservation(reservationId);
+        await releaseReservationQuietly(reservationId);
       } catch (releaseError) {
         console.error("Failed to release inventory after checkout error:", releaseError);
       }
