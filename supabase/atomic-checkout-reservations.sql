@@ -86,17 +86,17 @@ begin
 
   select count(*)
     into existing_count
-  from public.products
-  where id = any(normalized_product_ids);
+  from public.products p
+  where p.id = any(normalized_product_ids);
 
   if existing_count <> coalesce(array_length(normalized_product_ids, 1), 0) then
     raise exception 'One or more products no longer exist.' using errcode = 'P0001';
   end if;
 
   perform 1
-  from public.products
-  where id = any(normalized_product_ids)
-  order by id
+  from public.products p
+  where p.id = any(normalized_product_ids)
+  order by p.id
   for update;
 
   select p.title
@@ -134,9 +134,9 @@ begin
       updated_at = now()
   where p.id = any(normalized_product_ids);
 
-  insert into public.inventory_reservations (product_ids, product_details, status, expires_at, created_at, updated_at)
+  insert into public.inventory_reservations as ir (product_ids, product_details, status, expires_at, created_at, updated_at)
   values (normalized_product_ids, product_snapshot, 'pending', reservation_expires_at, now(), now())
-  returning id, expires_at, product_ids, product_details
+  returning ir.id, ir.expires_at, ir.product_ids, ir.product_details
   into reservation_id, expires_at, product_ids, product_details;
 
   return next;
@@ -157,8 +157,8 @@ begin
 
   select *
     into reservation
-  from public.inventory_reservations
-  where id = reservation_id
+  from public.inventory_reservations ir
+  where ir.id = release_checkout_inventory.reservation_id
   for update;
 
   if not found or reservation.status in ('released', 'expired') then
@@ -171,10 +171,10 @@ begin
       updated_at = now()
   where p.id = any(reservation.product_ids);
 
-  update public.inventory_reservations
-  set status = release_status,
+    update public.inventory_reservations ir
+    set status = release_status,
       updated_at = now()
-  where id = reservation_id;
+    where ir.id = release_checkout_inventory.reservation_id;
 end;
 $$;
 
@@ -208,8 +208,8 @@ begin
 
   select *
     into reservation
-  from public.inventory_reservations
-  where id = reservation_id
+  from public.inventory_reservations ir
+  where ir.id = finalize_reserved_checkout.reservation_id
   for update;
 
   if found then
@@ -221,16 +221,16 @@ begin
       order_status := 'manual_review';
     else
       if reservation.stripe_checkout_session_id is null then
-        update public.inventory_reservations
-        set stripe_checkout_session_id = stripe_session_id,
+        update public.inventory_reservations ir
+        set stripe_checkout_session_id = finalize_reserved_checkout.stripe_session_id,
             status = 'paid',
             updated_at = now()
-        where id = reservation_id;
+        where ir.id = finalize_reserved_checkout.reservation_id;
       else
-        update public.inventory_reservations
+        update public.inventory_reservations ir
         set status = 'paid',
             updated_at = now()
-        where id = reservation_id;
+        where ir.id = finalize_reserved_checkout.reservation_id;
       end if;
     end if;
   else
@@ -330,16 +330,16 @@ begin
 
   select count(*)
     into existing_count
-  from public.products
-  where id = any(normalized_product_ids);
+  from public.products p
+  where p.id = any(normalized_product_ids);
 
   if existing_count <> coalesce(array_length(normalized_product_ids, 1), 0) then
     order_status := 'manual_review';
   else
     perform 1
-    from public.products
-    where id = any(normalized_product_ids)
-    order by id
+    from public.products p
+    where p.id = any(normalized_product_ids)
+    order by p.id
     for update;
 
     select p.title
@@ -445,3 +445,22 @@ grant execute on function public.reserve_checkout_inventory(uuid[]) to service_r
 grant execute on function public.release_checkout_inventory(uuid, text) to service_role;
 grant execute on function public.finalize_reserved_checkout(uuid, text, text, text, text, jsonb, integer, integer, text, jsonb, uuid[]) to service_role;
 grant execute on function public.finalize_legacy_checkout(text, text, text, text, jsonb, integer, integer, text, jsonb, uuid[]) to service_role;
+
+-- Rollback-safe smoke test for reserve_checkout_inventory.
+-- This intentionally opens a transaction, reserves one active product, and rolls back.
+-- It catches runtime PL/pgSQL issues such as ambiguous identifier resolution without leaving data behind.
+--
+-- begin;
+-- with candidate as (
+--   select p.id
+--   from public.products p
+--   where p.status = 'active'
+--     and p.quantity > 0
+--   order by p.created_at desc
+--   limit 1
+-- )
+-- select *
+-- from public.reserve_checkout_inventory(
+--   (select array_agg(c.id) from candidate c)
+-- );
+-- rollback;

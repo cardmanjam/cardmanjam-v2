@@ -1,3 +1,5 @@
+import Stripe from "stripe";
+
 export type ReservedProduct = {
   id: string;
   title: string;
@@ -36,7 +38,7 @@ export type CheckoutDb = {
 export type CheckoutStripe = {
   checkout: {
     sessions: {
-      create: (params: Record<string, unknown>) => Promise<{ id: string; url: string | null }>;
+      create: (params: Stripe.Checkout.SessionCreateParams) => Promise<{ id: string; url: string | null }>;
     };
   };
 };
@@ -49,6 +51,8 @@ type CheckoutDependencies = {
   baseUrl: string;
   logger: Logger;
   now?: Date;
+  promoCode?: unknown;
+  familyFreeShippingCode?: string;
   getShippingAmount: (items: ReservedProduct[]) => number;
   getShippingLabel: (items: ReservedProduct[]) => string;
 };
@@ -59,9 +63,14 @@ export type CheckoutResult =
 
 const STRIPE_MINIMUM_EXPIRATION_SECONDS = 30 * 60;
 const RESERVATION_EXPIRATION_BUFFER_SECONDS = 35 * 60;
+const FAMILY_FREE_SHIPPING_PROMOTION_TYPE = "family_free_shipping";
 
 function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function normalizePromoCode(value: unknown) {
+  return typeof value === "string" ? value.trim().toUpperCase() : "";
 }
 
 export function normalizeProductIds(productIds: unknown) {
@@ -89,6 +98,11 @@ export function computeSessionExpiration(reservationExpiresAt: string, now = new
     reservationExpiresAtSeconds,
     stripeMinimumRequirement: Math.floor(now.getTime() / 1000) + STRIPE_MINIMUM_EXPIRATION_SECONDS
   };
+}
+
+export function isEligibleForFamilyFreeShipping(products: ReservedProduct[]) {
+  const subtotal = products.reduce((sum, product) => sum + product.price_cents, 0);
+  return subtotal <= 2500 && !products.some((product) => product.shipping_class === "sealed");
 }
 
 async function releaseReservation(db: CheckoutDb, logger: Logger, reservationId: string, status: "released" | "expired" = "released") {
@@ -121,6 +135,8 @@ export async function createAtomicCheckoutSession(productIds: unknown, deps: Che
   }
 
   const now = deps.now ?? new Date();
+  const enteredPromoCode = normalizePromoCode(deps.promoCode);
+  const configuredFamilyFreeShippingCode = normalizePromoCode(deps.familyFreeShippingCode);
   let reservationId: string | null = null;
 
   try {
@@ -152,6 +168,28 @@ export async function createAtomicCheckoutSession(productIds: unknown, deps: Che
     const reservedProducts = reservation.product_details ?? [];
     const shippingAmount = deps.getShippingAmount(reservedProducts);
     const expiration = computeSessionExpiration(reservation.expires_at, now);
+    const isPromotionAttempted = enteredPromoCode.length > 0;
+    const hasSealedProduct = reservedProducts.some((product) => product.shipping_class === "sealed");
+    const isFamilyFreeShippingEligible = isEligibleForFamilyFreeShipping(reservedProducts);
+
+    if (isPromotionAttempted && !configuredFamilyFreeShippingCode) {
+      await releaseReservation(deps.db, deps.logger, reservationId);
+      return { ok: false, status: 500, error: "Promo code is unavailable right now." };
+    }
+
+    if (isPromotionAttempted && enteredPromoCode !== configuredFamilyFreeShippingCode) {
+      await releaseReservation(deps.db, deps.logger, reservationId);
+      return { ok: false, status: 400, error: "Promo code is invalid." };
+    }
+
+    if (isPromotionAttempted && !isFamilyFreeShippingEligible) {
+      await releaseReservation(deps.db, deps.logger, reservationId);
+      if (hasSealedProduct) {
+        return { ok: false, status: 409, error: "Promo code is not available for sealed products." };
+      }
+
+      return { ok: false, status: 409, error: "Promo code is only available for merchandise subtotals of $25 or less." };
+    }
 
     if (expiration.shouldExtendReservation) {
       const { error } = await updateReservationExpiry(deps.db, reservationId, expiration.sessionExpiresAt);
@@ -166,7 +204,7 @@ export async function createAtomicCheckoutSession(productIds: unknown, deps: Che
       }
     }
 
-    const sessionParams = {
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",
       success_url: `${deps.baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${deps.baseUrl}/cancel`,
@@ -182,18 +220,22 @@ export async function createAtomicCheckoutSession(productIds: unknown, deps: Che
           product_data: { name: product.title, metadata: { product_id: product.id } }
         }
       })),
-      shipping_options: [{
+      metadata: {
+        reservation_id: reservationId,
+        product_ids: normalized.ids.join(","),
+        ...(isPromotionAttempted ? { promotion_type: FAMILY_FREE_SHIPPING_PROMOTION_TYPE } : {})
+      }
+    };
+
+    if (!isPromotionAttempted) {
+      sessionParams.shipping_options = [{
         shipping_rate_data: {
           type: "fixed_amount",
           fixed_amount: { amount: shippingAmount, currency: "usd" },
           display_name: deps.getShippingLabel(reservedProducts)
         }
-      }],
-      metadata: {
-        reservation_id: reservationId,
-        product_ids: normalized.ids.join(",")
-      }
-    };
+      }];
+    }
 
     let session: { id: string; url: string | null };
     try {
@@ -202,6 +244,7 @@ export async function createAtomicCheckoutSession(productIds: unknown, deps: Che
       deps.logger.error("Stripe Checkout Session creation failed", {
         reservationId,
         itemCount: reservedProducts.length,
+        promotionAttempted: isPromotionAttempted,
         reservationExpiresAt: reservation.expires_at,
         sessionExpiresAt: expiration.sessionExpiresAt,
         stripeMinimumRequirement: expiration.stripeMinimumRequirement,

@@ -13,6 +13,8 @@ type ProductSnapshot = {
   shipping_class: "card" | "sealed";
 };
 
+type OrderDetail = ProductSnapshot | { promotion_type: string };
+
 async function getFullSession(stripe: Stripe, sessionId: string) {
   return stripe.checkout.sessions.retrieve(sessionId, {
     expand: ["payment_intent", "payment_intent.latest_charge"]
@@ -63,6 +65,12 @@ async function buildProductDetails(db: ReturnType<typeof createAdminClient>, pro
   return (data ?? []) as ProductSnapshot[];
 }
 
+function attachPromotionMarker(productDetails: ProductSnapshot[], promotionType: string | null): OrderDetail[] {
+  if (!promotionType) return productDetails;
+
+  return [...productDetails, { promotion_type: promotionType }];
+}
+
 async function finalizePaidSession(stripe: Stripe, session: Stripe.Checkout.Session) {
   const db = createAdminClient();
   const productIds = parseProductIds(session);
@@ -88,7 +96,7 @@ async function finalizePaidSession(stripe: Stripe, session: Stripe.Checkout.Sess
   });
 
   const receiptUrl = getReceiptUrl(paymentIntent);
-  const productDetails = await buildProductDetails(db, productIds);
+  const productDetails = attachPromotionMarker(await buildProductDetails(db, productIds), session.metadata?.promotion_type ?? null);
   const reservationId = session.metadata?.reservation_id || null;
   const amountTotal = session.amount_total ?? 0;
   const shippingTotal = session.total_details?.amount_shipping ?? 0;

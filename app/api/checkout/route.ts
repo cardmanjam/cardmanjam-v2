@@ -11,12 +11,14 @@ export async function POST(request: Request) {
     const stripeSecret = process.env.STRIPE_SECRET_KEY;
     if (!stripeSecret) return NextResponse.json({error:"Missing STRIPE_SECRET_KEY."},{status:500});
 
-    const { productIds } = await request.json();
+    const { productIds, promoCode } = await request.json();
     const result = await createAtomicCheckoutSession(productIds, {
       db: createAdminClient(),
       stripe: new Stripe(stripeSecret),
       baseUrl: process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin,
       logger: console,
+      promoCode,
+      familyFreeShippingCode: process.env.FAMILY_FREE_SHIPPING_CODE,
       getShippingAmount: getOrderShippingAmount,
       getShippingLabel: getOrderShippingLabel
     });

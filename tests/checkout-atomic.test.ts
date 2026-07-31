@@ -98,6 +98,7 @@ test("normal single checkout keeps $5 shipping and extends the reservation expir
   assert.equal(dbMock.updates[0].table, "inventory_reservations");
   assert.equal((stripeMock.calls[0].expires_at as number), Math.floor(new Date("2026-01-01T12:35:05.000Z").getTime() / 1000));
   assert.ok(String((stripeMock.calls[0].metadata as Record<string, unknown>).product_ids).includes("11111111-1111-4111-8111-111111111111"));
+  assert.equal("promotion_type" in (stripeMock.calls[0].metadata as Record<string, unknown>), false);
 });
 
 test("sealed checkout keeps $15 shipping", async () => {
@@ -198,7 +199,224 @@ test("blank ordinary checkout contains no promo behavior", async () => {
   });
 
   assert.equal(result.ok, true);
-  assert.equal("promo_code" in (stripeMock.calls[0].metadata as Record<string, unknown>), false);
+  assert.equal("promotion_type" in (stripeMock.calls[0].metadata as Record<string, unknown>), false);
+});
+
+test("eligible manually entered code gets free shipping and still collects the shipping address", async () => {
+  const dbMock = createDbMock();
+  const stripeMock = createStripeMock();
+  const logger = { error() {}, warn() {} };
+
+  const result = await createAtomicCheckoutSession(["11111111-1111-4111-8111-111111111111"], {
+    db: dbMock.db,
+    stripe: stripeMock.stripe,
+    baseUrl: "https://example.com",
+    logger,
+    promoCode: "family",
+    familyFreeShippingCode: "FAMILY",
+    now: new Date("2026-01-01T12:00:05.000Z"),
+    getShippingAmount: () => 500,
+    getShippingLabel: () => "Tracked card/slab shipping"
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal("shipping_options" in stripeMock.calls[0], false);
+  assert.deepEqual(stripeMock.calls[0].shipping_address_collection, { allowed_countries: ["US"] });
+  assert.equal((stripeMock.calls[0].metadata as Record<string, unknown>).promotion_type, "family_free_shipping");
+});
+
+test("lowercase promo entry works", async () => {
+  const dbMock = createDbMock();
+  const stripeMock = createStripeMock();
+  const logger = { error() {}, warn() {} };
+
+  const result = await createAtomicCheckoutSession(["11111111-1111-4111-8111-111111111111"], {
+    db: dbMock.db,
+    stripe: stripeMock.stripe,
+    baseUrl: "https://example.com",
+    logger,
+    promoCode: "family",
+    familyFreeShippingCode: "FaMiLy",
+    getShippingAmount: () => 500,
+    getShippingLabel: () => "Tracked card/slab shipping"
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal((stripeMock.calls[0].metadata as Record<string, unknown>).promotion_type, "family_free_shipping");
+});
+
+test("invalid code releases reservation", async () => {
+  const dbMock = createDbMock();
+  const stripeMock = createStripeMock();
+  const logger = { error() {}, warn() {} };
+
+  const result = await createAtomicCheckoutSession(["11111111-1111-4111-8111-111111111111"], {
+    db: dbMock.db,
+    stripe: stripeMock.stripe,
+    baseUrl: "https://example.com",
+    logger,
+    promoCode: "wrong",
+    familyFreeShippingCode: "family",
+    getShippingAmount: () => 500,
+    getShippingLabel: () => "Tracked card/slab shipping"
+  });
+
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.status, 400);
+    assert.equal(result.error, "Promo code is invalid.");
+  }
+  assert.ok(dbMock.rpcCalls.some((call) => call.name === "release_checkout_inventory"));
+  assert.equal(stripeMock.calls.length, 0);
+});
+
+test("over-$25 promo attempt releases reservation", async () => {
+  const dbMock = createDbMock({
+    reserve: {
+      data: [{
+        reservation_id: "res-3",
+        expires_at: "2026-01-01T12:30:00.000Z",
+        product_ids: ["33333333-3333-4333-8333-333333333333"],
+        product_details: [{
+          id: "33333333-3333-4333-8333-333333333333",
+          title: "Slab",
+          price_cents: 2600,
+          category: "slab",
+          shipping_class: "card"
+        }]
+      }],
+      error: null
+    }
+  });
+  const stripeMock = createStripeMock();
+  const logger = { error() {}, warn() {} };
+
+  const result = await createAtomicCheckoutSession(["33333333-3333-4333-8333-333333333333"], {
+    db: dbMock.db,
+    stripe: stripeMock.stripe,
+    baseUrl: "https://example.com",
+    logger,
+    promoCode: "family",
+    familyFreeShippingCode: "family",
+    getShippingAmount: () => 500,
+    getShippingLabel: () => "Tracked card/slab shipping"
+  });
+
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.status, 409);
+  }
+  assert.ok(dbMock.rpcCalls.some((call) => call.name === "release_checkout_inventory"));
+  assert.equal(stripeMock.calls.length, 0);
+});
+
+test("sealed promo attempt releases reservation", async () => {
+  const dbMock = createDbMock({
+    reserve: {
+      data: [{
+        reservation_id: "res-4",
+        expires_at: "2026-01-01T12:30:00.000Z",
+        product_ids: ["44444444-4444-4444-8444-444444444444"],
+        product_details: [{
+          id: "44444444-4444-4444-8444-444444444444",
+          title: "Sealed Tin",
+          price_cents: 2000,
+          category: "sealed",
+          shipping_class: "sealed"
+        }]
+      }],
+      error: null
+    }
+  });
+  const stripeMock = createStripeMock();
+  const logger = { error() {}, warn() {} };
+
+  const result = await createAtomicCheckoutSession(["44444444-4444-4444-8444-444444444444"], {
+    db: dbMock.db,
+    stripe: stripeMock.stripe,
+    baseUrl: "https://example.com",
+    logger,
+    promoCode: "family",
+    familyFreeShippingCode: "family",
+    getShippingAmount: () => 1500,
+    getShippingLabel: () => "Sealed or mixed-order shipping"
+  });
+
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.status, 409);
+  }
+  assert.ok(dbMock.rpcCalls.some((call) => call.name === "release_checkout_inventory"));
+  assert.equal(stripeMock.calls.length, 0);
+});
+
+test("missing environment variable returns a generic error and releases reservation", async () => {
+  const dbMock = createDbMock();
+  const stripeMock = createStripeMock();
+  const logger = { error() {}, warn() {} };
+
+  const result = await createAtomicCheckoutSession(["11111111-1111-4111-8111-111111111111"], {
+    db: dbMock.db,
+    stripe: stripeMock.stripe,
+    baseUrl: "https://example.com",
+    logger,
+    promoCode: "family",
+    familyFreeShippingCode: "",
+    getShippingAmount: () => 500,
+    getShippingLabel: () => "Tracked card/slab shipping"
+  });
+
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.status, 500);
+    assert.equal(result.error, "Promo code is unavailable right now.");
+  }
+  assert.ok(dbMock.rpcCalls.some((call) => call.name === "release_checkout_inventory"));
+  assert.equal(stripeMock.calls.length, 0);
+});
+
+test("two concurrent eligible checkouts still produce one Stripe success and one 409", async () => {
+  const successDbMock = createDbMock();
+  const failDbMock = createDbMock({
+    reserve: {
+      data: null,
+      error: { message: "Shiftry is already reserved or sold." }
+    }
+  });
+  const successStripeMock = createStripeMock();
+  const failStripeMock = createStripeMock();
+  const logger = { error() {}, warn() {} };
+
+  const [successResult, failureResult] = await Promise.all([
+    createAtomicCheckoutSession(["11111111-1111-4111-8111-111111111111"], {
+      db: successDbMock.db,
+      stripe: successStripeMock.stripe,
+      baseUrl: "https://example.com",
+      logger,
+      promoCode: "family",
+      familyFreeShippingCode: "family",
+      getShippingAmount: () => 500,
+      getShippingLabel: () => "Tracked card/slab shipping"
+    }),
+    createAtomicCheckoutSession(["11111111-1111-4111-8111-111111111111"], {
+      db: failDbMock.db,
+      stripe: failStripeMock.stripe,
+      baseUrl: "https://example.com",
+      logger,
+      promoCode: "family",
+      familyFreeShippingCode: "family",
+      getShippingAmount: () => 500,
+      getShippingLabel: () => "Tracked card/slab shipping"
+    })
+  ]);
+
+  assert.equal(successResult.ok, true);
+  assert.equal(failureResult.ok, false);
+  if (!failureResult.ok) {
+    assert.equal(failureResult.status, 409);
+  }
+  assert.equal(successStripeMock.calls.length, 1);
+  assert.equal(failStripeMock.calls.length, 0);
 });
 
 test("computeSessionExpiration extends a reservation to a 35-minute safety window above Stripe's minimum", () => {
