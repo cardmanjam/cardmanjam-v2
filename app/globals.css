@@ -145,9 +145,9 @@ button, input, select, textarea { font: inherit; }
 }
 .hero-portrait {
   width: 100%;
-  height: min(32rem, 62vh);
-  object-fit: cover;
-  object-position: 30% 62%;
+  height: auto;
+  object-fit: contain;
+  object-position: center top;
   background: var(--bg);
   border-radius: 1.55rem;
   display: block;
@@ -542,7 +542,7 @@ footer { margin-top: 3rem; padding: 2rem 0 3rem; border-top: 1px solid rgba(255,
   .hunt-section { grid-template-columns: 1fr; }
   .hero { padding-top: 4.2rem; }
   .hero-visual { order: -1; }
-  .hero-portrait { height: min(24rem, 50vh); object-position: 30% 62%; }
+  .hero-portrait { height: auto; object-position: center top; }
   .about-portrait { min-height: 320px; object-position: 30% 68%; }
   .hunt-visual { min-height: 220px; }
   .feature-grid, .benefit-grid { grid-template-columns: 1fr 1fr; }
@@ -559,7 +559,7 @@ footer { margin-top: 3rem; padding: 2rem 0 3rem; border-top: 1px solid rgba(255,
   .header-shell { flex-wrap: wrap; }
   .nav { width: 100%; justify-content: space-between; }
   .hero { padding-top: 3rem; }
-  .hero-portrait { height: min(22rem, 46vh); object-position: 30% 62%; }
+  .hero-portrait { height: auto; object-position: center top; }
   .about-portrait { min-height: 280px; object-position: 30% 68%; }
   .hunt-section { gap: 1.25rem; }
   .hunt-visual { min-height: 190px; }
