@@ -43,7 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <a href="https://www.instagram.com/cardmanjam" target="_blank" rel="noreferrer">Instagram</a>
                 <a href="https://x.com/cardmanjam" target="_blank" rel="noreferrer">X</a>
                 <a href="https://www.ebay.com/" target="_blank" rel="noreferrer">eBay</a>
-                <a href="mailto:hello@jamscards.com">Message Me</a>
+                <a href="mailto:cardmanjam@gmail.com">Message Me</a>
               </div>
             </div>
             <div className="container footer-note">Thanks for spending time in My Vault.</div>

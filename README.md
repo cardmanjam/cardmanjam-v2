@@ -43,7 +43,7 @@ Add:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_SECRET_KEY` (server-only and Sensitive)
-- `ADMIN_EMAIL` = the exact email used for your Supabase admin user
+- `ADMIN_EMAIL` = `cardmanjam@gmail.com` (must match your Supabase admin user email exactly)
 - `STRIPE_WEBHOOK_SECRET` (added after the webhook is created)
 
 Your existing `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` may remain, but hosted Stripe Checkout does not require it.
